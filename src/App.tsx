@@ -97,6 +97,7 @@ export default function FinanzasHeidy() {
   const [workspaceLoaded, setWorkspaceLoaded] = useState(false)
   const [cloudInitialized, setCloudInitialized] = useState(false)
   const syncingRef = useRef(false)
+  const initializedRef = useRef(false)
   const [sharedWorkspaceId, setSharedWorkspaceId] = useState(
     () => localStorage.getItem('finanzas-shared-id') || ''
   )
@@ -192,6 +193,7 @@ export default function FinanzasHeidy() {
       doc(db, 'workspaces', sharedWorkspaceId || user.uid),
       (snapshot) => {
         syncingRef.current = true
+        initializedRef.current = true
 
         const data = snapshot.data()
 
@@ -215,7 +217,7 @@ export default function FinanzasHeidy() {
 
         setTimeout(() => {
           syncingRef.current = false
-        }, 500)
+        }, 300)
       }
     )
 
@@ -223,14 +225,14 @@ export default function FinanzasHeidy() {
   }, [user, sharedWorkspaceId])
 
   useEffect(() => {
-    if (!user || !workspaceLoaded || !cloudInitialized || syncingRef.current) return
+    if (!user || !initializedRef.current || syncingRef.current) return
 
     setDoc(doc(db, 'workspaces', sharedWorkspaceId || user.uid), {
       accounts,
       goals,
       expenses,
     })
-  }, [accounts, goals, expenses, user, sharedWorkspaceId, workspaceLoaded])
+  }, [accounts, goals, expenses, user, sharedWorkspaceId, workspaceLoaded, cloudInitialized])
 
   useEffect(() => {
     localStorage.setItem('finanzas-goals', JSON.stringify(goals))
