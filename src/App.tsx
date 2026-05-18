@@ -76,10 +76,9 @@ const auth = getAuth(firebaseApp)
 const provider = new GoogleAuthProvider()
 
 export default function FinanzasHeidy() {
-  const money = (value?: number | string) =>
-  Number(value || 0).toLocaleString()
+  const money = (value?: number | string) => Number(value || 0).toLocaleString()
 
- const safeParse = (key: string) => {
+  const safeParse = (key: string) => {
     if (typeof window === 'undefined') return []
 
     try {
@@ -552,10 +551,10 @@ export default function FinanzasHeidy() {
   }
 
   return (
-    <div className="min-h-screen bg-[#050816] text-white p-6 bg-[radial-gradient(circle_at_top,rgba(6,182,212,0.12),transparent_35%)]">
+    <div className="min-h-screen bg-[#050816] text-white p-3 sm:p-6 bg-[radial-gradient(circle_at_top,rgba(6,182,212,0.12),transparent_35%)]">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between gap-4 mb-8 flex-wrap">
-          <h1 className="text-6xl font-black bg-gradient-to-r from-cyan-300 via-blue-400 to-indigo-500 bg-clip-text text-transparent">
+          <h1 className="text-4xl sm:text-6xl font-black bg-gradient-to-r from-cyan-300 via-blue-400 to-indigo-500 bg-clip-text text-transparent">
             Finanzas
           </h1>
 
@@ -567,20 +566,20 @@ export default function FinanzasHeidy() {
             )}
 
             {loadingCloud ? (
-              <div className="px-5 py-3 rounded-2xl bg-white/5 border border-white/10 text-white/60 font-bold text-sm">
+              <div className="px-4 sm:px-5 py-3 rounded-2xl bg-white/5 border border-white/10 text-white/60 font-bold text-sm">
                 Conectando...
               </div>
             ) : user ? (
               <button
                 onClick={() => signOut(auth)}
-                className="px-5 py-3 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-300 font-black"
+                className="px-3 sm:px-5 py-2.5 sm:py-3 rounded-[18px] bg-red-500/10 border border-red-500/20 text-red-300 font-black text-xs sm:text-base whitespace-nowrap"
               >
                 Cerrar sesión
               </button>
             ) : (
               <button
                 onClick={() => signInWithPopup(auth, provider)}
-                className="px-5 py-3 rounded-2xl bg-gradient-to-r from-cyan-400 to-blue-500 text-black font-black"
+                className="shrink-0 px-2.5 sm:px-5 py-2 sm:py-3 rounded-[18px] bg-gradient-to-r from-cyan-400 to-blue-500 text-black font-black text-[11px] sm:text-base whitespace-nowrap"
               >
                 Login Google
               </button>
@@ -589,12 +588,12 @@ export default function FinanzasHeidy() {
         </div>
 
         <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
-          <div className="flex gap-3 overflow-auto">
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide w-full sm:w-auto snap-x snap-mandatory">
           {['Resumen', 'Ahorros', 'Cuentas y tarjetas', 'Gastos'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-5 py-3 rounded-2xl transition-all duration-300 ${
+              className={`min-w-fit snap-start px-3 sm:px-5 py-2.5 sm:py-3 rounded-[18px] transition-all duration-300 text-[13px] sm:text-base font-semibold ${
                 activeTab === tab
                   ? 'bg-gradient-to-r from-cyan-400 to-blue-500 text-black font-black'
                   : 'bg-white/5 text-white/70 hover:bg-white/10'
@@ -605,7 +604,7 @@ export default function FinanzasHeidy() {
           ))}
           </div>
 
-          <div className="flex items-center gap-3 rounded-[20px] bg-white/5 border border-white/10 px-4 py-3">
+          <div className="flex items-center gap-2 rounded-[18px] bg-white/5 border border-white/10 px-3 py-2.5 sm:px-4 sm:py-3 w-full sm:w-auto justify-between sm:justify-normal">
             <span className="text-white/50 text-sm uppercase tracking-wider">
               Mes
             </span>
@@ -625,17 +624,17 @@ export default function FinanzasHeidy() {
               Periodo activo
             </p>
 
-            <h2 className="text-2xl font-black capitalize mt-1 text-cyan-200">
+            <h2 className="text-xl sm:text-lg sm:text-2xl font-black capitalize mt-1 text-cyan-200">
               {monthLabel}
             </h2>
           </div>
 
           <div className="flex gap-3 flex-wrap">
-            <div className="px-4 py-2 rounded-full bg-emerald-500/10 text-emerald-300 text-sm font-bold">
+            <div className="px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm bg-emerald-500/10 text-emerald-300 text-sm font-bold">
               {filteredExpenses.filter((e) => e.paid).length} pagos realizados
             </div>
 
-            <div className="px-4 py-2 rounded-full bg-yellow-500/10 text-yellow-300 text-sm font-bold">
+            <div className="px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm bg-yellow-500/10 text-yellow-300 text-sm font-bold">
               {filteredExpenses.filter((e) => !e.paid).length} pendientes
             </div>
           </div>
@@ -643,7 +642,7 @@ export default function FinanzasHeidy() {
 
         {activeTab === 'Resumen' && (
           <>
-            <div className="grid md:grid-cols-2 xl:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
               <div className="rounded-[28px] bg-white/5 border border-white/10 p-6">
                 <p className="text-white/50 uppercase text-xs tracking-[0.2em]">
                   Mi disponible
@@ -653,7 +652,7 @@ export default function FinanzasHeidy() {
                   RD${money(myAvailable)}
                 </h2>
 
-                <p className="text-white/40 mt-2 text-sm">
+                <p className="text-white/40 mt-1 text-xs sm:text-sm leading-relaxed">
                   Disponible luego de pagos
                 </p>
               </div>
@@ -667,7 +666,7 @@ export default function FinanzasHeidy() {
                   RD${money(partnerAvailable)}
                 </h2>
 
-                <p className="text-white/40 mt-2 text-sm">
+                <p className="text-white/40 mt-1 text-xs sm:text-sm leading-relaxed">
                   Disponible luego de pagos
                 </p>
               </div>
@@ -681,7 +680,7 @@ export default function FinanzasHeidy() {
                   RD${money(totalSavings)}
                 </h2>
 
-                <p className="text-white/40 mt-2 text-sm">
+                <p className="text-white/40 mt-1 text-xs sm:text-sm leading-relaxed">
                   Total guardado en metas
                 </p>
               </div>
@@ -699,7 +698,7 @@ export default function FinanzasHeidy() {
                   )}
                 </h2>
 
-                <p className="text-white/40 mt-2 text-sm">
+                <p className="text-white/40 mt-1 text-xs sm:text-sm leading-relaxed">
                   Este mes
                 </p>
               </div>
@@ -763,10 +762,10 @@ export default function FinanzasHeidy() {
               </div>
             </div>
 
-            <div className="grid xl:grid-cols-2 gap-4 mt-6">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mt-6">
               <div className="rounded-[32px] bg-white/5 border border-white/10 p-6">
-                <div className="flex items-center justify-between mb-8">
-                  <h2 className="text-2xl font-black">
+                <div className="flex items-center justify-between gap-3 mb-6">
+                  <h2 className="text-lg sm:text-2xl font-black">
                     Gastos por categoría
                   </h2>
 
@@ -776,7 +775,7 @@ export default function FinanzasHeidy() {
                 </div>
 
                 <div className="flex items-center justify-center">
-                  <div className="relative w-[260px] h-[260px] rounded-full overflow-hidden">
+                  <div className="relative w-[210px] h-[210px] sm:w-[260px] sm:h-[260px] rounded-full overflow-hidden mx-auto">
                     <div
                       className="absolute inset-0 rounded-full"
                       style={{
@@ -801,7 +800,7 @@ export default function FinanzasHeidy() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 mt-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-8">
                   {[
                     ['🍔 Comida', 'bg-cyan-400'],
                     ['🚗 Transporte', 'bg-amber-400'],
@@ -817,7 +816,7 @@ export default function FinanzasHeidy() {
                         <p className="text-sm font-bold">{label}</p>
                       </div>
 
-                      <h3 className="text-xl font-black text-white mt-2">
+                      <h3 className="text-base sm:text-xl font-black text-white mt-2">
                         RD${money(expenseCategoryData[label as keyof typeof expenseCategoryData] || 0)}
                       </h3>
                     </div>
@@ -826,8 +825,8 @@ export default function FinanzasHeidy() {
               </div>
 
               <div className="rounded-[32px] bg-white/5 border border-white/10 p-6">
-                <div className="flex items-center justify-between mb-8">
-                  <h2 className="text-2xl font-black">
+                <div className="flex items-center justify-between gap-3 mb-6">
+                  <h2 className="text-lg sm:text-2xl font-black">
                     Ingresos vs gastos
                   </h2>
 
@@ -910,10 +909,10 @@ export default function FinanzasHeidy() {
 
               </div>
 
-            <div className="grid xl:grid-cols-2 gap-4 mt-6">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mt-6">
               <div className="rounded-[32px] bg-white/5 border border-white/10 p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-black">
+                  <h2 className="text-lg sm:text-2xl font-black">
                     Balance por persona
                   </h2>
 
@@ -978,7 +977,7 @@ export default function FinanzasHeidy() {
               </div>
 
               <div className="rounded-[32px] bg-white/5 border border-white/10 p-6">
-                <h2 className="text-2xl font-black mb-6">
+                <h2 className="text-lg sm:text-2xl font-black mb-6">
                   Últimos movimientos
                 </h2>
 
@@ -998,7 +997,7 @@ export default function FinanzasHeidy() {
                         className="rounded-[22px] bg-gradient-to-r from-white/[0.04] to-white/[0.02] border border-white/10 p-4 flex items-center justify-between gap-4"
                       >
                         <div className="flex items-center gap-4 min-w-0">
-                          <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 flex items-center justify-center text-2xl shrink-0">
+                          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-cyan-500/10 flex items-center justify-center text-2xl shrink-0">
                             {(expense.category || '💸').split(' ')[0]}
                           </div>
 
@@ -1023,8 +1022,8 @@ export default function FinanzasHeidy() {
                           </div>
                         </div>
 
-                        <div className="text-right shrink-0">
-                          <h2 className={`text-2xl font-black ${expense.paid ? 'text-emerald-300' : 'text-red-300'}`}>
+                        <div className="text-left sm:text-right shrink-0 w-full sm:w-auto">
+                          <h2 className={`text-lg sm:text-2xl font-black ${expense.paid ? 'text-emerald-300' : 'text-red-300'}`}>
                             {expense.paid ? '-' : ''}RD${money(expense.amount)}
                           </h2>
 
@@ -1045,8 +1044,8 @@ export default function FinanzasHeidy() {
         {activeTab === 'Cuentas y tarjetas' && (
           <>
             <div className="mt-6 rounded-[32px] bg-gradient-to-br from-[#10182d] to-[#0b1120] border border-white/10 p-6">
-              <div className="flex items-center justify-between mb-8">
-                <h2 className="text-3xl font-black tracking-tight">
+              <div className="flex items-center justify-between gap-3 mb-6">
+                <h2 className="text-2xl sm:text-3xl font-black tracking-tight">
                   Cuentas y tarjetas
                 </h2>
 
@@ -1071,7 +1070,7 @@ export default function FinanzasHeidy() {
                     setAccountPaymentDay('')
                     setShowAccountModal(true)
                   }}
-                  className="px-5 py-3 rounded-[18px] bg-gradient-to-r from-cyan-400 to-blue-500 text-black font-black text-base"
+                  className="shrink-0 px-2.5 sm:px-5 py-2 sm:py-3 rounded-[18px] bg-gradient-to-r from-cyan-400 to-blue-500 text-black font-black text-[11px] sm:text-base whitespace-nowrap"
                 >
                   + Nueva cuenta
                 </button>
@@ -1087,7 +1086,7 @@ export default function FinanzasHeidy() {
                       <div className="flex items-start justify-between">
                         <div>
                           <p className="text-white/70 text-sm">{account.bank}</p>
-                          <h3 className="text-2xl font-black mt-1 text-white">
+                          <h3 className="text-lg sm:text-2xl font-black mt-1 text-white">
                             {account.type}
                           </h3>
                         </div>
@@ -1140,7 +1139,7 @@ export default function FinanzasHeidy() {
                         </h2>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div className="rounded-[16px] bg-white/[0.04] p-3 min-h-[82px] flex flex-col justify-between">
                           <p className="text-white/40 text-xs uppercase">Titular</p>
                           <h4 className="text-sm font-black mt-1">{account.owner}</h4>
@@ -1159,7 +1158,7 @@ export default function FinanzasHeidy() {
 
                       {account.type === 'Nómina' && (
                         <>
-                          <div className="grid grid-cols-2 gap-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div className="rounded-[16px] bg-white/[0.04] p-3 min-h-[82px] flex flex-col justify-between">
                               <p className="text-white/40 text-xs uppercase">1ra Quincena</p>
                               <h4 className="text-sm font-black mt-1">
@@ -1175,7 +1174,7 @@ export default function FinanzasHeidy() {
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-2 gap-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div className="rounded-[16px] bg-white/[0.04] p-3 min-h-[82px] flex flex-col justify-between">
                               <p className="text-white/40 text-xs uppercase">1er Pago</p>
                               <h4 className="text-sm font-black mt-1">
@@ -1215,7 +1214,7 @@ export default function FinanzasHeidy() {
 
                       {account.type === 'Tarjeta' && (
                         <>
-                          <div className="grid grid-cols-2 gap-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div className="rounded-[16px] bg-red-500/10 p-3 min-h-[82px] flex flex-col justify-between">
                               <p className="text-red-300 text-xs uppercase">Deuda</p>
                               <h4 className="text-sm font-black mt-1">
@@ -1259,7 +1258,7 @@ export default function FinanzasHeidy() {
                             </span>
                           </div>
 
-                          <div className="grid grid-cols-2 gap-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div className="rounded-[16px] bg-white/[0.04] p-3 min-h-[82px] flex flex-col justify-between">
                               <p className="text-white/40 text-xs uppercase">Corte</p>
                               <h4 className="text-sm font-black mt-1">Día {account.cutDay || '-'}</h4>
@@ -1319,7 +1318,7 @@ export default function FinanzasHeidy() {
                       className="w-full rounded-[20px] bg-white/[0.04] border border-white/10 px-5 py-4"
                     />
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <select
                         value={accountType}
                         onChange={(e) => setAccountType(e.target.value)}
@@ -1344,7 +1343,7 @@ export default function FinanzasHeidy() {
 
                     {accountType === 'Nómina' && (
                       <>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <input
                             value={accountPayrollOne}
                             onChange={(e) => setAccountPayrollOne(e.target.value)}
@@ -1360,7 +1359,7 @@ export default function FinanzasHeidy() {
                           />
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <input
                             value={accountFirstPayDay}
                             onChange={(e) => setAccountFirstPayDay(e.target.value)}
@@ -1376,7 +1375,7 @@ export default function FinanzasHeidy() {
                           />
                         </div>
 
-                        <div className="grid grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                           <input
                             value={accountAutoDebitName}
                             onChange={(e) => setAccountAutoDebitName(e.target.value)}
@@ -1403,7 +1402,7 @@ export default function FinanzasHeidy() {
 
                     {accountType === 'Tarjeta' && (
                       <>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <input
                             value={accountLimit}
                             onChange={(e) => setAccountLimit(e.target.value)}
@@ -1448,7 +1447,7 @@ export default function FinanzasHeidy() {
                             ))}
                         </select>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <input
                             value={accountCutDay}
                             onChange={(e) => setAccountCutDay(e.target.value)}
@@ -1484,13 +1483,13 @@ export default function FinanzasHeidy() {
         {activeTab === 'Gastos' && (
           <>
             <div className="mt-6 rounded-[32px] bg-gradient-to-br from-[#10182d] to-[#0b1120] border border-white/10 p-6">
-              <div className="flex items-center justify-between mb-8">
-                <div>
-                  <h2 className="text-3xl font-black tracking-tight">
+              <div className="flex items-center justify-between gap-3 mb-6">
+                <div className="min-w-0">
+                  <h2 className="text-2xl sm:text-3xl font-black tracking-tight">
                     Gastos y pagos
                   </h2>
 
-                  <p className="text-white/40 mt-2 text-sm">
+                  <p className="text-white/40 mt-1 text-xs sm:text-sm leading-relaxed">
                     Control de gastos fijos, variables y pagos mensuales
                   </p>
                 </div>
@@ -1508,7 +1507,7 @@ export default function FinanzasHeidy() {
     setExpenseAccount('')
                     setShowExpenseModal(true)
                   }}
-                  className="px-5 py-3 rounded-[18px] bg-gradient-to-r from-cyan-400 to-blue-500 text-black font-black text-base"
+                  className="shrink-0 px-2.5 sm:px-5 py-2 sm:py-3 rounded-[18px] bg-gradient-to-r from-cyan-400 to-blue-500 text-black font-black text-[11px] sm:text-base whitespace-nowrap"
                 >
                   + Agregar
                 </button>
@@ -1518,7 +1517,7 @@ export default function FinanzasHeidy() {
                 {['Todos', 'Yo', 'Pareja', 'Fijos', 'Variables'].map((filter) => (
                   <button
                     key={filter}
-                    className="px-4 py-2 rounded-full bg-white/[0.05] border border-white/10 text-sm hover:bg-cyan-500/20"
+                    className="px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm bg-white/[0.05] border border-white/10 text-sm hover:bg-cyan-500/20"
                   >
                     {filter}
                   </button>
@@ -1537,9 +1536,9 @@ export default function FinanzasHeidy() {
                     key={expense.id}
                     className="rounded-[24px] bg-gradient-to-br from-[#0f172d] to-[#0b1020] border border-white/10 p-4"
                   >
-                    <div className="flex items-start justify-between gap-4">
+                    <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
                       <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 flex items-center justify-center text-2xl shrink-0">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-cyan-500/10 flex items-center justify-center text-2xl shrink-0">
                           {(expense.category || '💸').split(' ')[0]}
                         </div>
 
@@ -1559,7 +1558,7 @@ export default function FinanzasHeidy() {
                             </span>
                           </div>
 
-                          <h3 className="text-xl font-black">
+                          <h3 className="text-base sm:text-xl font-black">
                             {expense.name}
                           </h3>
 
@@ -1578,7 +1577,7 @@ export default function FinanzasHeidy() {
                       </div>
 
                       <div className="flex flex-col items-end gap-3">
-                        <h2 className={`text-2xl font-black ${expense.paid ? 'text-emerald-300' : 'text-red-300'}`}>
+                        <h2 className={`text-lg sm:text-2xl font-black ${expense.paid ? 'text-emerald-300' : 'text-red-300'}`}>
                           RD${money(expense.amount)}
                         </h2>
 
@@ -1651,7 +1650,7 @@ export default function FinanzasHeidy() {
                   </div>
 
                   <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <input
                         value={expenseName}
                         onChange={(e) => setExpenseName(e.target.value)}
@@ -1667,7 +1666,7 @@ export default function FinanzasHeidy() {
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <select
                         value={expenseFrequency}
                         onChange={(e) => setExpenseFrequency(e.target.value)}
@@ -1687,7 +1686,7 @@ export default function FinanzasHeidy() {
                       </select>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {expenseFrequency === 'Fijo' ? (
                         <input
                           type="number"
@@ -1768,8 +1767,8 @@ export default function FinanzasHeidy() {
         {activeTab === 'Ahorros' && (
           <>
             <div className="mt-6 rounded-[32px] bg-gradient-to-br from-[#10182d] to-[#0b1120] border border-white/10 p-6">
-              <div className="flex items-center justify-between mb-8">
-                <h2 className="text-3xl font-black tracking-tight">
+              <div className="flex items-center justify-between gap-3 mb-6">
+                <h2 className="text-2xl sm:text-3xl font-black tracking-tight">
                   Metas de ahorro
                 </h2>
 
@@ -1785,12 +1784,12 @@ export default function FinanzasHeidy() {
                       setGoalLocation('Efectivo')
                       setShowGoalModal(true)
                     }}
-                    className="px-5 py-3 rounded-[18px] bg-gradient-to-r from-cyan-400 to-cyan-500 text-black font-black text-base hover:scale-[1.02] transition-all"
+                    className="px-3 sm:px-5 py-2.5 sm:py-3 rounded-[18px] bg-gradient-to-r from-cyan-400 to-cyan-500 text-black font-black text-xs sm:text-base hover:scale-[1.02] transition-all whitespace-nowrap"
                   >
                     + Nueva meta
                   </button>
 
-                  <div className="px-5 py-3 rounded-[18px] bg-cyan-500/10 text-cyan-300 font-black text-base">
+                  <div className="hidden sm:flex px-5 py-3 rounded-[18px] bg-cyan-500/10 text-cyan-300 font-black text-base">
                     {goals.length} meta(s)
                   </div>
                 </div>
@@ -1824,12 +1823,12 @@ export default function FinanzasHeidy() {
                       key={goal.id}
                       className="rounded-[22px] bg-gradient-to-br from-[#0f172d] to-[#0b1020] border border-white/10 p-3.5"
                     >
-                      <div className="flex items-start justify-between gap-4">
+                      <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
                         <div className="flex items-start gap-4">
                           <div className="text-2xl mt-1">{goal.icon || '🎯'}</div>
 
                           <div>
-                            <h3 className="text-xl font-black leading-tight max-w-[190px]">
+                            <h3 className="text-base sm:text-xl font-black leading-tight max-w-[190px]">
                               {goal.name}
                             </h3>
 
@@ -1840,7 +1839,7 @@ export default function FinanzasHeidy() {
                         </div>
 
                         <div className="flex flex-col items-end gap-4">
-                          <div className="text-cyan-300 text-xl font-black">
+                          <div className="text-cyan-300 text-base sm:text-xl font-black">
                             {Math.round(progress)}%
                           </div>
 
@@ -1883,7 +1882,7 @@ export default function FinanzasHeidy() {
                         />
                       </div>
 
-                      <div className="grid grid-cols-2 gap-3 mt-5">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-5">
                         <div className="rounded-[16px] bg-white/[0.04] p-3 min-h-[82px] flex flex-col justify-between">
                           <p className="text-white/40 text-xs uppercase tracking-wider">
                             Ahorrado
@@ -1905,7 +1904,7 @@ export default function FinanzasHeidy() {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-3 mt-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
                         <div className="rounded-[16px] bg-cyan-500/10 p-3 min-h-[82px] flex flex-col justify-between">
                           <p className="text-cyan-300 text-xs uppercase tracking-wider">
                             Meta mensual
@@ -1995,7 +1994,7 @@ export default function FinanzasHeidy() {
                       className="w-full rounded-[20px] bg-white/[0.04] border border-white/10 px-5 py-4"
                     />
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <input
                         value={goalSaved}
                         onChange={(e) => setGoalSaved(e.target.value)}
