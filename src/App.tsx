@@ -1,4 +1,51 @@
 import { useEffect, useMemo, useState } from 'react'
+
+interface Account {
+  id: number
+  bank: string
+  type: string
+  owner: string
+  balance: number
+  payroll?: number
+  payrollOne?: string
+  payrollTwo?: string
+  limit?: number
+  availableCredit?: number
+  debt?: number
+  debtAccount?: string
+  firstPayDay?: string
+  secondPayDay?: string
+  autoDebitName?: string
+  autoDebitAmount?: number
+  autoDebitDay?: string
+  cutDay?: string
+  paymentDay?: string
+  color?: string
+}
+
+interface Goal {
+  id: number
+  name: string
+  target: number
+  saved: number
+  monthly: number
+  date: string
+  icon: string
+  location: string
+}
+
+interface Expense {
+  id: number
+  name: string
+  amount: number
+  frequency: string
+  originalMonth?: string
+  owner: string
+  date: string
+  category: string
+  paid: boolean
+  account?: string
+}
 import { initializeApp } from 'firebase/app'
 import {
   getFirestore,
@@ -45,12 +92,12 @@ export default function FinanzasHeidy() {
   const [activeTab, setActiveTab] = useState('Resumen')
   const currentMonth = new Date().toISOString().slice(0, 7)
   const [selectedMonth, setSelectedMonth] = useState(currentMonth)
-  const [user, setUser] = useState(null)
+  const [user, setUser] = useState<any>(null)
   const [loadingCloud, setLoadingCloud] = useState(true)
 
-  const [accounts, setAccounts] = useState(() => safeParse('finanzas-accounts'))
-  const [goals, setGoals] = useState(() => safeParse('finanzas-goals'))
-  const [expenses, setExpenses] = useState(() => safeParse('finanzas-expenses'))
+  const [accounts, setAccounts] = useState<Account[]>(() => safeParse('finanzas-accounts'))
+  const [goals, setGoals] = useState<Goal[]>(() => safeParse('finanzas-goals'))
+  const [expenses, setExpenses] = useState<Expense[]>(() => safeParse('finanzas-expenses'))
 
   const [showGoalModal, setShowGoalModal] = useState(false)
   const [showAccountModal, setShowAccountModal] = useState(false)
@@ -774,7 +821,7 @@ export default function FinanzasHeidy() {
                       </div>
 
                       <h3 className="text-xl font-black text-white mt-2">
-                        RD${money(expenseCategoryData[label] || 0)}
+                        RD${money(expenseCategoryData[label as keyof typeof expenseCategoryData] || 0)}
                       </h3>
                     </div>
                   ))}
