@@ -76,9 +76,9 @@ const auth = getAuth(firebaseApp)
 const provider = new GoogleAuthProvider()
 
 export default function FinanzasHeidy() {
-  const money = (value) => Number(value || 0).toLocaleString()
+  const money = (value: number | string) => Number(value || 0).toLocaleString()
 
-  const safeParse = (key) => {
+  const safeParse = (key: string) {
     if (typeof window === 'undefined') return []
 
     try {
@@ -109,7 +109,7 @@ export default function FinanzasHeidy() {
   const [goalMonthly, setGoalMonthly] = useState('')
   const [goalDate, setGoalDate] = useState('')
   const [goalIcon, setGoalIcon] = useState('🎯')
-  const [editingGoalId, setEditingGoalId] = useState(null)
+  const [editingGoalId, setEditingGoalId] = useState<number | null>(null)
   const [goalLocation, setGoalLocation] = useState('Efectivo')
 
   const [accountBank, setAccountBank] = useState('')
@@ -131,7 +131,7 @@ export default function FinanzasHeidy() {
   const [accountAutoDebitAmount, setAccountAutoDebitAmount] = useState('')
   const [accountAutoDebitDay, setAccountAutoDebitDay] = useState('')
   const [accountColor, setAccountColor] = useState('from-violet-500 to-purple-500')
-  const [editingAccountId, setEditingAccountId] = useState(null)
+  const [editingAccountId, setEditingAccountId] = useState<number | null>(null)
 
   const [expenseName, setExpenseName] = useState('')
   const [expenseAmount, setExpenseAmount] = useState('')
@@ -140,7 +140,7 @@ export default function FinanzasHeidy() {
   const [expenseDate, setExpenseDate] = useState('')
   const [expenseCategory, setExpenseCategory] = useState('🍔 Comida')
   const [expensePaid, setExpensePaid] = useState(false)
-  const [editingExpenseId, setEditingExpenseId] = useState(null)
+  const [editingExpenseId, setEditingExpenseId] = useState<number | null>(null)
   const [expenseAccount, setExpenseAccount] = useState('')
 
   useEffect(() => {
@@ -252,8 +252,8 @@ export default function FinanzasHeidy() {
     filteredExpenses
       .filter((expense) => expense.paid)
       .forEach((expense) => {
-        if (categories[expense.category] !== undefined) {
-          categories[expense.category] += Number(expense.amount || 0)
+        if (expense.category in categories) {
+          categories[expense.category as keyof typeof categories] += Number(expense.amount || 0)
         }
       })
 
@@ -283,11 +283,7 @@ export default function FinanzasHeidy() {
       .reduce((acc, item) => acc + Number(item.amount || 0), 0)
   }, [filteredExpenses])
 
-  const projectedPendingExpenses = useMemo(() => {
-    return filteredExpenses
-      .filter((expense) => !expense.paid)
-      .reduce((acc, item) => acc + Number(item.amount || 0), 0)
-  }, [filteredExpenses])
+  
 
   const myIncome = useMemo(() => {
     return accounts
