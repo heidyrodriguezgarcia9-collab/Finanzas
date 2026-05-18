@@ -93,6 +93,7 @@ export default function FinanzasHeidy() {
   const [selectedMonth, setSelectedMonth] = useState(currentMonth)
   const [user, setUser] = useState<any>(null)
   const [loadingCloud, setLoadingCloud] = useState(true)
+  const [sharedWorkspaceId, setSharedWorkspaceId] = useState('')
   const SESSION_TIMEOUT = 1000 * 60 * 60 * 24 * 7
 
   const [accounts, setAccounts] = useState<Account[]>(() => safeParse('finanzas-accounts'))
@@ -175,7 +176,7 @@ export default function FinanzasHeidy() {
     if (!user) return
 
     const unsubscribe = onSnapshot(
-      doc(db, 'users', user.uid),
+      doc(db, 'workspaces', sharedWorkspaceId || user.uid),
       (snapshot) => {
         const data = snapshot.data()
 
@@ -193,12 +194,12 @@ export default function FinanzasHeidy() {
   useEffect(() => {
     if (!user) return
 
-    setDoc(doc(db, 'users', user.uid), {
+    setDoc(doc(db, 'workspaces', sharedWorkspaceId || user.uid), {
       accounts,
       goals,
       expenses,
     })
-  }, [accounts, goals, expenses, user])
+  }, [accounts, goals, expenses, user, sharedWorkspaceId])
 
   useEffect(() => {
     localStorage.setItem('finanzas-goals', JSON.stringify(goals))
@@ -343,6 +344,8 @@ export default function FinanzasHeidy() {
   const partnerProjectedCashFlow = useMemo(() => {
     return partnerIncome - partnerPendingExpenses
   }, [partnerIncome, partnerPendingExpenses])
+
+  
 
   const addGoal = () => {
     if (!goalName) return
@@ -539,6 +542,16 @@ export default function FinanzasHeidy() {
               Controla cuentas, tarjetas, gastos, ahorros y cash flow en una sola app.
             </p>
 
+            <div className="mt-5 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 p-4 text-left">
+              <h4 className="font-black text-cyan-200 mb-2">
+                👥 Modo pareja en tiempo real
+              </h4>
+
+              <p className="text-white/50 text-sm leading-relaxed">
+                Comparte tu código y ambos podrán editar las mismas finanzas desde celulares diferentes.
+              </p>
+            </div>
+
             <button
               onClick={() => signInWithPopup(auth, provider)}
               className="w-full mt-8 rounded-[24px] bg-gradient-to-r from-cyan-400 to-blue-500 py-5 text-black font-black text-lg hover:scale-[1.02] transition-all duration-300 shadow-2xl shadow-cyan-500/20"
@@ -596,10 +609,31 @@ export default function FinanzasHeidy() {
             Finanzas
           </h1>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
+            {user && (
+              <div className="flex items-center gap-2 rounded-2xl bg-white/5 border border-white/10 px-3 py-2">
+                <input
+                  value={sharedWorkspaceId}
+                  onChange={(e) => setSharedWorkspaceId(e.target.value)}
+                  placeholder="Pegar ID pareja"
+                  className="bg-transparent outline-none text-xs sm:text-sm text-cyan-200 placeholder:text-white/30 w-[100px] sm:w-[140px]"
+                />
+
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(user.uid)
+                    alert(`Tu ID es: ${user.uid}`)
+                  }}
+                  className="px-2 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 text-[10px] sm:text-xs font-black"
+                >
+                  Copiar ID
+                </button>
+              </div>
+            )}
+
             {user && (
               <div className="px-4 py-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 font-bold text-sm">
-                ☁️ Sincronizado
+                ☁️ Sync pareja
               </div>
             )}
 
