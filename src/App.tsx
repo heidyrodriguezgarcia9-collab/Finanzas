@@ -95,6 +95,7 @@ export default function FinanzasHeidy() {
   const [user, setUser] = useState<any>(null)
   const [loadingCloud, setLoadingCloud] = useState(true)
   const [workspaceLoaded, setWorkspaceLoaded] = useState(false)
+  const [cloudInitialized, setCloudInitialized] = useState(false)
   const [sharedWorkspaceId, setSharedWorkspaceId] = useState(
     () => localStorage.getItem('finanzas-shared-id') || ''
   )
@@ -193,6 +194,7 @@ export default function FinanzasHeidy() {
 
         if (!data) {
           setWorkspaceLoaded(true)
+          setCloudInitialized(true)
           return
         }
 
@@ -201,6 +203,7 @@ export default function FinanzasHeidy() {
         if (data.expenses) setExpenses(data.expenses)
 
         setWorkspaceLoaded(true)
+        setCloudInitialized(true)
       }
     )
 
@@ -208,7 +211,7 @@ export default function FinanzasHeidy() {
   }, [user, sharedWorkspaceId])
 
   useEffect(() => {
-    if (!user || !workspaceLoaded) return
+    if (!user || !workspaceLoaded || !cloudInitialized) return
 
     setDoc(doc(db, 'workspaces', sharedWorkspaceId || user.uid), {
       accounts,
