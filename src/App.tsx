@@ -197,7 +197,7 @@ export default function FinanzasHeidy() {
     )
 
     return () => unsubscribe()
-  }, [user])
+  }, [user, sharedWorkspaceId])
 
   useEffect(() => {
     if (!user) return
@@ -738,7 +738,8 @@ export default function FinanzasHeidy() {
                       return
                     }
 
-                    localStorage.setItem('finanzas-shared-id', sharedWorkspaceId)
+                    localStorage.setItem('finanzas-shared-id', sharedWorkspaceId.trim())
+                    setSharedWorkspaceId(sharedWorkspaceId.trim())
                     alert('Modo pareja conectado 💕')
                   }}
                   className="px-2 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 text-[10px] sm:text-xs font-black"
