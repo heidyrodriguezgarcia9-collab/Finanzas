@@ -758,14 +758,24 @@ export default function FinanzasHeidy() {
 
                 <button
                   onClick={() => {
-                    if (!sharedWorkspaceId.trim()) {
+                    const partnerId = sharedWorkspaceId.trim()
+
+                    if (!partnerId) {
                       alert('Pega un ID primero')
                       return
                     }
 
-                    localStorage.setItem('finanzas-shared-id', sharedWorkspaceId.trim())
-                    setSharedWorkspaceId(sharedWorkspaceId.trim())
+                    localStorage.setItem('finanzas-shared-id', partnerId)
+
+                    setSharedWorkspaceId(partnerId)
                     setWorkspaceLoaded(false)
+                    setCloudInitialized(false)
+                    initializedRef.current = false
+
+                    setAccounts([])
+                    setGoals([])
+                    setExpenses([])
+
                     alert('Modo pareja conectado 💕')
                   }}
                   className="px-2 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 text-[10px] sm:text-xs font-black"
