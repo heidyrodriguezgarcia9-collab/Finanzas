@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 interface Account {
   id: number
   bank: string
@@ -96,14 +96,15 @@ export default function FinanzasHeidy() {
   const [loadingCloud, setLoadingCloud] = useState(true)
   const [workspaceLoaded, setWorkspaceLoaded] = useState(false)
   const [cloudInitialized, setCloudInitialized] = useState(false)
+  const syncingRef = useRef(false)
   const [sharedWorkspaceId, setSharedWorkspaceId] = useState(
     () => localStorage.getItem('finanzas-shared-id') || ''
   )
   const SESSION_TIMEOUT = 1000 * 60 * 60 * 24 * 7
 
-  const [accounts, setAccounts] = useState<Account[]>(() => safeParse('finanzas-accounts'))
-  const [goals, setGoals] = useState<Goal[]>(() => safeParse('finanzas-goals'))
-  const [expenses, setExpenses] = useState<Expense[]>(() => safeParse('finanzas-expenses'))
+  const [accounts, setAccounts] = useState<Account[]>([])
+  const [goals, setGoals] = useState<Goal[]>([])
+  const [expenses, setExpenses] = useState<Expense[]>([])
 
   const [showGoalModal, setShowGoalModal] = useState(false)
   const [showAccountModal, setShowAccountModal] = useState(false)
@@ -190,20 +191,31 @@ export default function FinanzasHeidy() {
     const unsubscribe = onSnapshot(
       doc(db, 'workspaces', sharedWorkspaceId || user.uid),
       (snapshot) => {
+        syncingRef.current = true
+
         const data = snapshot.data()
 
-        if (!data) {
-          setWorkspaceLoaded(true)
-          setCloudInitialized(true)
-          return
+        if (data?.accounts) {
+          setAccounts(data.accounts)
+          localStorage.setItem('finanzas-accounts', JSON.stringify(data.accounts))
         }
 
-        if (data.accounts) setAccounts(data.accounts)
-        if (data.goals) setGoals(data.goals)
-        if (data.expenses) setExpenses(data.expenses)
+        if (data?.goals) {
+          setGoals(data.goals)
+          localStorage.setItem('finanzas-goals', JSON.stringify(data.goals))
+        }
+
+        if (data?.expenses) {
+          setExpenses(data.expenses)
+          localStorage.setItem('finanzas-expenses', JSON.stringify(data.expenses))
+        }
 
         setWorkspaceLoaded(true)
         setCloudInitialized(true)
+
+        setTimeout(() => {
+          syncingRef.current = false
+        }, 500)
       }
     )
 
@@ -211,7 +223,7 @@ export default function FinanzasHeidy() {
   }, [user, sharedWorkspaceId])
 
   useEffect(() => {
-    if (!user || !workspaceLoaded || !cloudInitialized) return
+    if (!user || !workspaceLoaded || !cloudInitialized || syncingRef.current) return
 
     setDoc(doc(db, 'workspaces', sharedWorkspaceId || user.uid), {
       accounts,
