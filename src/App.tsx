@@ -78,7 +78,7 @@ const provider = new GoogleAuthProvider()
 export default function FinanzasHeidy() {
   const money = (value: number | string) => Number(value || 0).toLocaleString()
 
-  const safeParse = (key: string) {
+ const safeParse = (key: string) => {
     if (typeof window === 'undefined') return []
 
     try {
