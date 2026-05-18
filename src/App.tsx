@@ -189,28 +189,19 @@ export default function FinanzasHeidy() {
 
     setWorkspaceLoaded(false)
 
+    const workspaceId = sharedWorkspaceId || user.uid
+
     const unsubscribe = onSnapshot(
-      doc(db, 'workspaces', sharedWorkspaceId || user.uid),
+      doc(db, 'workspaces', workspaceId),
       (snapshot) => {
         syncingRef.current = true
         initializedRef.current = true
 
         const data = snapshot.data()
 
-        if (data?.accounts) {
-          setAccounts(data.accounts)
-          localStorage.setItem('finanzas-accounts', JSON.stringify(data.accounts))
-        }
-
-        if (data?.goals) {
-          setGoals(data.goals)
-          localStorage.setItem('finanzas-goals', JSON.stringify(data.goals))
-        }
-
-        if (data?.expenses) {
-          setExpenses(data.expenses)
-          localStorage.setItem('finanzas-expenses', JSON.stringify(data.expenses))
-        }
+        setAccounts(data?.accounts || [])
+        setGoals(data?.goals || [])
+        setExpenses(data?.expenses || [])
 
         setWorkspaceLoaded(true)
         setCloudInitialized(true)
@@ -792,6 +783,28 @@ export default function FinanzasHeidy() {
                 >
                   Copiar ID
                 </button>
+
+                {sharedWorkspaceId && (
+                  <button
+                    onClick={() => {
+                      localStorage.removeItem('finanzas-shared-id')
+
+                      setSharedWorkspaceId('')
+                      setWorkspaceLoaded(false)
+                      setCloudInitialized(false)
+                      initializedRef.current = false
+
+                      setAccounts([])
+                      setGoals([])
+                      setExpenses([])
+
+                      alert('Saliste del modo pareja 💔')
+                    }}
+                    className="px-2 py-1 rounded-lg bg-red-500/20 text-red-300 text-[10px] sm:text-xs font-black"
+                  >
+                    Salir
+                  </button>
+                )}
               </div>
             )}
 
@@ -884,7 +897,7 @@ export default function FinanzasHeidy() {
                   Mi disponible
                 </p>
 
-                <h2 className="text-4xl font-black text-cyan-300 mt-3">
+                <h2 className="text-2xl sm:text-4xl font-black text-cyan-300 mt-3 break-all leading-tight">
                   RD${money(myAvailable)}
                 </h2>
 
@@ -898,7 +911,7 @@ export default function FinanzasHeidy() {
                   Pareja disponible
                 </p>
 
-                <h2 className="text-4xl font-black text-pink-300 mt-3">
+                <h2 className="text-2xl sm:text-4xl font-black text-pink-300 mt-3 break-all leading-tight">
                   RD${money(partnerAvailable)}
                 </h2>
 
@@ -912,7 +925,7 @@ export default function FinanzasHeidy() {
                   Ahorros
                 </p>
 
-                <h2 className="text-4xl font-black text-emerald-300 mt-3">
+                <h2 className="text-2xl sm:text-4xl font-black text-emerald-300 mt-3 break-all leading-tight">
                   RD${money(totalSavings)}
                 </h2>
 
@@ -926,7 +939,7 @@ export default function FinanzasHeidy() {
                   Gastos pagados
                 </p>
 
-                <h2 className="text-4xl font-black text-orange-300 mt-3">
+                <h2 className="text-2xl sm:text-4xl font-black text-orange-300 mt-3 break-all leading-tight">
                   RD${money(
                     filteredExpenses
                       .filter((item) => item.paid)
