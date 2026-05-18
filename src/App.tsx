@@ -94,7 +94,9 @@ export default function FinanzasHeidy() {
   const [selectedMonth, setSelectedMonth] = useState(currentMonth)
   const [user, setUser] = useState<any>(null)
   const [loadingCloud, setLoadingCloud] = useState(true)
-  const [sharedWorkspaceId, setSharedWorkspaceId] = useState('')
+  const [sharedWorkspaceId, setSharedWorkspaceId] = useState(
+    () => localStorage.getItem('finanzas-shared-id') || ''
+  )
   const SESSION_TIMEOUT = 1000 * 60 * 60 * 24 * 7
 
   const [accounts, setAccounts] = useState<Account[]>(() => safeParse('finanzas-accounts'))
@@ -728,6 +730,21 @@ export default function FinanzasHeidy() {
                   placeholder="Pegar ID pareja"
                   className="bg-transparent outline-none text-xs sm:text-sm text-cyan-200 placeholder:text-white/30 w-[100px] sm:w-[140px]"
                 />
+
+                <button
+                  onClick={() => {
+                    if (!sharedWorkspaceId.trim()) {
+                      alert('Pega un ID primero')
+                      return
+                    }
+
+                    localStorage.setItem('finanzas-shared-id', sharedWorkspaceId)
+                    alert('Modo pareja conectado 💕')
+                  }}
+                  className="px-2 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 text-[10px] sm:text-xs font-black"
+                >
+                  Entrar
+                </button>
 
                 <button
                   onClick={() => {
