@@ -562,11 +562,34 @@ export default function FinanzasHeidy() {
           </div>
         </div>
       </div>
-)
-  }
+    )
+}
 
   return (
-    <div className="min-h-screen bg-[#050816] text-white p-3 sm:p-6 bg-[radial-gradient(circle_at_top,rgba(6,182,212,0.12),transparent_35%)]">
+    <>
+      <style>{`
+        .no-scrollbar::-webkit-scrollbar {
+          width: 0px;
+          height: 0px;
+          display: none;
+          background: transparent;
+        }
+
+        .no-scrollbar {
+          scrollbar-width: none !important;
+          -ms-overflow-style: none !important;
+          overflow: -moz-scrollbars-none;
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+          display: none !important;
+          width: 0 !important;
+          height: 0 !important;
+          background: transparent !important;
+        }
+      `}</style>
+
+      <div className="min-h-screen bg-[#050816] text-white p-3 sm:p-6 bg-[radial-gradient(circle_at_top,rgba(6,182,212,0.12),transparent_35%)]">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between gap-4 mb-8 flex-wrap">
           <h1 className="text-4xl sm:text-6xl font-black bg-gradient-to-r from-cyan-300 via-blue-400 to-indigo-500 bg-clip-text text-transparent">
@@ -603,7 +626,7 @@ export default function FinanzasHeidy() {
         </div>
 
         <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
-          <div className="finanzas-tabs flex gap-2 overflow-x-auto pb-1 w-full sm:w-auto snap-x snap-mandatory">
+          <div className="finanzas-tabs flex gap-2 overflow-x-scroll pb-1 w-full sm:w-auto snap-x snap-mandatory no-scrollbar [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch', overflowY: 'hidden' as const }}>
           {['Resumen', 'Ahorros', 'Cuentas y tarjetas', 'Gastos'].map((tab) => (
             <button
               key={tab}
@@ -926,7 +949,7 @@ export default function FinanzasHeidy() {
 
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mt-6">
               <div className="rounded-[32px] bg-white/5 border border-white/10 p-6">
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex items-start sm:items-center justify-between gap-3 mb-5">
                   <h2 className="text-lg sm:text-2xl font-black">
                     Balance por persona
                   </h2>
@@ -1293,22 +1316,22 @@ export default function FinanzasHeidy() {
             </div>
 
             {showAccountModal && (
-              <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-6">
-                <div className="w-full max-w-2xl rounded-[32px] bg-[#0B1120] border border-white/10 p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-4xl font-black">
+              <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-6 overflow-y-auto no-scrollbar">
+                <div className="w-full max-w-2xl rounded-[24px] sm:rounded-[32px] bg-[#0B1120] border border-white/10 p-4 sm:p-6 max-h-[92vh] overflow-y-auto no-scrollbar">
+                  <div className="flex items-start sm:items-center justify-between gap-3 mb-5">
+                    <h2 className="text-2xl sm:text-4xl font-black">
                       {editingAccountId ? 'Editar cuenta' : 'Nueva cuenta'}
                     </h2>
 
                     <button
                       onClick={() => setShowAccountModal(false)}
-                      className="w-12 h-12 rounded-2xl bg-white/5"
+                      className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-white/5 shrink-0"
                     >
                       ✕
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-4 gap-3 mb-5">
+                  <div className="grid grid-cols-4 sm:grid-cols-4 gap-2 sm:gap-3 mb-5">
                     {[
                       'from-violet-500 to-purple-500',
                       'from-pink-500 to-rose-500',
@@ -1325,19 +1348,19 @@ export default function FinanzasHeidy() {
                     ))}
                   </div>
 
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     <input
                       value={accountBank}
                       onChange={(e) => setAccountBank(e.target.value)}
                       placeholder="Banco o nombre"
-                      className="w-full rounded-[20px] bg-white/[0.04] border border-white/10 px-5 py-4"
+                      className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base"
                     />
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <select
                         value={accountType}
                         onChange={(e) => setAccountType(e.target.value)}
-                        className="w-full rounded-[20px] bg-white/[0.04] border border-white/10 px-5 py-4 text-white"
+                        className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base text-white"
                       >
                         <option className="bg-[#0B1120]">Nómina</option>
                         <option className="bg-[#0B1120]">Tarjeta</option>
@@ -1347,7 +1370,7 @@ export default function FinanzasHeidy() {
                       <select
                         value={accountOwner}
                         onChange={(e) => setAccountOwner(e.target.value)}
-                        className="w-full rounded-[20px] bg-white/[0.04] border border-white/10 px-5 py-4 text-white"
+                        className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base text-white"
                       >
                         <option className="bg-[#0B1120]">Yo</option>
                         <option className="bg-[#0B1120]">Pareja</option>
@@ -1363,14 +1386,14 @@ export default function FinanzasHeidy() {
                             value={accountPayrollOne}
                             onChange={(e) => setAccountPayrollOne(e.target.value)}
                             placeholder="Monto primera quincena"
-                            className="w-full rounded-[20px] bg-white/[0.04] border border-white/10 px-5 py-4"
+                            className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base"
                           />
 
                           <input
                             value={accountPayrollTwo}
                             onChange={(e) => setAccountPayrollTwo(e.target.value)}
                             placeholder="Monto segunda quincena"
-                            className="w-full rounded-[20px] bg-white/[0.04] border border-white/10 px-5 py-4"
+                            className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base"
                           />
                         </div>
 
@@ -1379,14 +1402,14 @@ export default function FinanzasHeidy() {
                             value={accountFirstPayDay}
                             onChange={(e) => setAccountFirstPayDay(e.target.value)}
                             placeholder="Día primer pago"
-                            className="w-full rounded-[20px] bg-white/[0.04] border border-white/10 px-5 py-4"
+                            className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base"
                           />
 
                           <input
                             value={accountSecondPayDay}
                             onChange={(e) => setAccountSecondPayDay(e.target.value)}
                             placeholder="Día segundo pago"
-                            className="w-full rounded-[20px] bg-white/[0.04] border border-white/10 px-5 py-4"
+                            className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base"
                           />
                         </div>
 
@@ -1395,21 +1418,21 @@ export default function FinanzasHeidy() {
                             value={accountAutoDebitName}
                             onChange={(e) => setAccountAutoDebitName(e.target.value)}
                             placeholder="Préstamo automático"
-                            className="w-full rounded-[20px] bg-white/[0.04] border border-white/10 px-5 py-4"
+                            className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base"
                           />
 
                           <input
                             value={accountAutoDebitAmount}
                             onChange={(e) => setAccountAutoDebitAmount(e.target.value)}
                             placeholder="Monto automático"
-                            className="w-full rounded-[20px] bg-white/[0.04] border border-white/10 px-5 py-4"
+                            className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base"
                           />
 
                           <input
                             value={accountAutoDebitDay}
                             onChange={(e) => setAccountAutoDebitDay(e.target.value)}
                             placeholder="Día descuento"
-                            className="w-full rounded-[20px] bg-white/[0.04] border border-white/10 px-5 py-4"
+                            className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base"
                           />
                         </div>
                       </>
@@ -1422,14 +1445,14 @@ export default function FinanzasHeidy() {
                             value={accountLimit}
                             onChange={(e) => setAccountLimit(e.target.value)}
                             placeholder="Límite tarjeta"
-                            className="w-full rounded-[20px] bg-white/[0.04] border border-white/10 px-5 py-4"
+                            className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base"
                           />
 
                           <input
                             value={accountAvailableCredit}
                             onChange={(e) => setAccountAvailableCredit(e.target.value)}
                             placeholder="Crédito disponible"
-                            className="w-full rounded-[20px] bg-white/[0.04] border border-white/10 px-5 py-4"
+                            className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base"
                           />
                         </div>
 
@@ -1437,13 +1460,13 @@ export default function FinanzasHeidy() {
                           value={accountDebt}
                           onChange={(e) => setAccountDebt(e.target.value)}
                           placeholder="Deuda actual"
-                          className="w-full rounded-[20px] bg-white/[0.04] border border-white/10 px-5 py-4"
+                          className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base"
                         />
 
                         <select
                           value={accountDebtAccount}
                           onChange={(e) => setAccountDebtAccount(e.target.value)}
-                          className="w-full rounded-[20px] bg-white/[0.04] border border-white/10 px-5 py-4 text-white"
+                          className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base text-white"
                         >
                           <option value="" className="bg-[#0B1120]">
                             ¿Desde qué cuenta pagarás?
@@ -1468,7 +1491,7 @@ export default function FinanzasHeidy() {
                             onChange={(e) => setAccountCutDay(e.target.value)}
                             type="date"
                             placeholder="Fecha de corte"
-                            className="w-full rounded-[20px] bg-white/[0.04] border border-white/10 px-5 py-4"
+                            className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base"
                           />
 
                           <input
@@ -1476,7 +1499,7 @@ export default function FinanzasHeidy() {
                             onChange={(e) => setAccountPaymentDay(e.target.value)}
                             type="date"
                             placeholder="Fecha de pago"
-                            className="w-full rounded-[20px] bg-white/[0.04] border border-white/10 px-5 py-4"
+                            className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base"
                           />
                         </div>
                       </>
@@ -1484,7 +1507,7 @@ export default function FinanzasHeidy() {
 
                     <button
                       onClick={addAccount}
-                      className="w-full rounded-[20px] bg-gradient-to-r from-cyan-400 to-blue-500 py-4 text-black font-black text-lg"
+                      className="w-full rounded-[18px] sm:rounded-[20px] bg-gradient-to-r from-cyan-400 to-blue-500 py-3 sm:py-4 text-black font-black text-sm sm:text-lg"
                     >
                       {editingAccountId ? 'Guardar cambios' : 'Guardar cuenta'}
                     </button>
@@ -1539,7 +1562,7 @@ export default function FinanzasHeidy() {
                 ))}
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {filteredExpenses.length === 0 && (
                   <div className="rounded-[24px] bg-white/[0.03] border border-white/10 h-[180px] flex items-center justify-center text-white/50 text-lg">
                     Sin gastos este mes
@@ -1649,35 +1672,35 @@ export default function FinanzasHeidy() {
             </div>
 
             {showExpenseModal && (
-              <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-6">
-                <div className="w-full max-w-2xl rounded-[32px] bg-[#0B1120] border border-white/10 p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-4xl font-black">
+              <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-6 overflow-y-auto no-scrollbar">
+                <div className="w-full max-w-2xl rounded-[24px] sm:rounded-[32px] bg-[#0B1120] border border-white/10 p-4 sm:p-6 max-h-[92vh] overflow-y-auto no-scrollbar">
+                  <div className="flex items-start sm:items-center justify-between gap-3 mb-5">
+                    <h2 className="text-2xl sm:text-4xl font-black">
                       Agregar gasto / pago
                     </h2>
 
                     <button
                       onClick={() => setShowExpenseModal(false)}
-                      className="w-12 h-12 rounded-2xl bg-white/5"
+                      className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-white/5 shrink-0"
                     >
                       ✕
                     </button>
                   </div>
 
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <input
                         value={expenseName}
                         onChange={(e) => setExpenseName(e.target.value)}
                         placeholder="Netflix, alquiler..."
-                        className="w-full rounded-[20px] bg-white/[0.04] border border-white/10 px-5 py-4"
+                        className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base"
                       />
 
                       <input
                         value={expenseAmount}
                         onChange={(e) => setExpenseAmount(e.target.value)}
                         placeholder="Monto"
-                        className="w-full rounded-[20px] bg-white/[0.04] border border-white/10 px-5 py-4"
+                        className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base"
                       />
                     </div>
 
@@ -1685,7 +1708,7 @@ export default function FinanzasHeidy() {
                       <select
                         value={expenseFrequency}
                         onChange={(e) => setExpenseFrequency(e.target.value)}
-                        className="w-full rounded-[20px] bg-white/[0.04] border border-white/10 px-5 py-4 text-white"
+                        className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base text-white"
                       >
                         <option className="bg-[#0B1120]">Variable</option>
                         <option className="bg-[#0B1120]">Fijo</option>
@@ -1694,7 +1717,7 @@ export default function FinanzasHeidy() {
                       <select
                         value={expenseOwner}
                         onChange={(e) => setExpenseOwner(e.target.value)}
-                        className="w-full rounded-[20px] bg-white/[0.04] border border-white/10 px-5 py-4 text-white"
+                        className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base text-white"
                       >
                         <option className="bg-[#0B1120]">Yo</option>
                         <option className="bg-[#0B1120]">Pareja</option>
@@ -1710,21 +1733,21 @@ export default function FinanzasHeidy() {
                           value={expenseDate}
                           onChange={(e) => setExpenseDate(e.target.value)}
                           placeholder="Día del mes"
-                          className="w-full rounded-[20px] bg-white/[0.04] border border-white/10 px-5 py-4"
+                          className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base"
                         />
                       ) : (
                         <input
                           type="date"
                           value={expenseDate}
                           onChange={(e) => setExpenseDate(e.target.value)}
-                          className="w-full rounded-[20px] bg-white/[0.04] border border-white/10 px-5 py-4"
+                          className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base"
                         />
                       )}
 
                       <select
                         value={expenseCategory}
                         onChange={(e) => setExpenseCategory(e.target.value)}
-                        className="w-full rounded-[20px] bg-white/[0.04] border border-white/10 px-5 py-4 text-white"
+                        className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base text-white"
                       >
                         <option className="bg-[#0B1120]">🍔 Comida</option>
                         <option className="bg-[#0B1120]">🚗 Transporte</option>
@@ -1738,7 +1761,7 @@ export default function FinanzasHeidy() {
                     <select
                       value={expenseAccount}
                       onChange={(e) => setExpenseAccount(e.target.value)}
-                      className="w-full rounded-[20px] bg-white/[0.04] border border-white/10 px-5 py-4 text-white"
+                      className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base text-white"
                     >
                       <option value="" className="bg-[#0B1120]">
                         Seleccionar cuenta o tarjeta
@@ -1768,7 +1791,7 @@ export default function FinanzasHeidy() {
 
                     <button
                       onClick={addExpense}
-                      className="w-full rounded-[20px] bg-gradient-to-r from-cyan-400 to-blue-500 py-4 text-black font-black text-lg"
+                      className="w-full rounded-[18px] sm:rounded-[20px] bg-gradient-to-r from-cyan-400 to-blue-500 py-3 sm:py-4 text-black font-black text-sm sm:text-lg"
                     >
                       Guardar gasto
                     </button>
@@ -1967,16 +1990,16 @@ export default function FinanzasHeidy() {
             </div>
 
             {showGoalModal && (
-              <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-6">
-                <div className="w-full max-w-2xl rounded-[32px] bg-[#0B1120] border border-white/10 p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-4xl font-black">
+              <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-6 overflow-y-auto no-scrollbar">
+                <div className="w-full max-w-2xl rounded-[24px] sm:rounded-[32px] bg-[#0B1120] border border-white/10 p-4 sm:p-6 max-h-[92vh] overflow-y-auto no-scrollbar">
+                  <div className="flex items-start sm:items-center justify-between gap-3 mb-5">
+                    <h2 className="text-2xl sm:text-4xl font-black">
                       {editingGoalId ? 'Editar meta' : 'Nueva meta'}
                     </h2>
 
                     <button
                       onClick={() => setShowGoalModal(false)}
-                      className="w-12 h-12 rounded-2xl bg-white/5"
+                      className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-white/5 shrink-0"
                     >
                       ✕
                     </button>
@@ -1987,26 +2010,26 @@ export default function FinanzasHeidy() {
                       <button
                         key={icon}
                         onClick={() => setGoalIcon(icon)}
-                        className={`h-16 rounded-[18px] border text-3xl transition-all ${goalIcon === icon ? 'bg-cyan-500 border-cyan-300 scale-105' : 'bg-white/[0.04] border-white/5 hover:bg-cyan-500/30'}`}
+                        className={`h-12 sm:h-16 rounded-[16px] sm:rounded-[18px] border text-xl sm:text-3xl transition-all ${goalIcon === icon ? 'bg-cyan-500 border-cyan-300 scale-105' : 'bg-white/[0.04] border-white/5 hover:bg-cyan-500/30'}`}
                       >
                         {icon}
                       </button>
                     ))}
                   </div>
 
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     <input
                       value={goalName}
                       onChange={(e) => setGoalName(e.target.value)}
                       placeholder="Nombre de la meta"
-                      className="w-full rounded-[20px] bg-white/[0.04] border border-white/10 px-5 py-4"
+                      className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base"
                     />
 
                     <input
                       value={goalTarget}
                       onChange={(e) => setGoalTarget(e.target.value)}
                       placeholder="Monto meta"
-                      className="w-full rounded-[20px] bg-white/[0.04] border border-white/10 px-5 py-4"
+                      className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base"
                     />
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -2014,21 +2037,21 @@ export default function FinanzasHeidy() {
                         value={goalSaved}
                         onChange={(e) => setGoalSaved(e.target.value)}
                         placeholder="Ahorro acumulado"
-                        className="w-full rounded-[20px] bg-white/[0.04] border border-white/10 px-5 py-4"
+                        className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base"
                       />
 
                       <input
                         value={goalMonthly}
                         onChange={(e) => setGoalMonthly(e.target.value)}
                         placeholder="Meta mensual"
-                        className="w-full rounded-[20px] bg-white/[0.04] border border-white/10 px-5 py-4"
+                        className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base"
                       />
                     </div>
 
                     <select
                       value={goalLocation}
                       onChange={(e) => setGoalLocation(e.target.value)}
-                      className="w-full rounded-[20px] bg-white/[0.04] border border-white/10 px-5 py-4 text-white"
+                      className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base text-white"
                     >
                       <option className="bg-[#0B1120]">Efectivo</option>
                       {accounts.map((account) => (
@@ -2046,12 +2069,12 @@ export default function FinanzasHeidy() {
                       type="date"
                       value={goalDate}
                       onChange={(e) => setGoalDate(e.target.value)}
-                      className="w-full rounded-[20px] bg-white/[0.04] border border-white/10 px-5 py-4"
+                      className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base"
                     />
 
                     <button
                       onClick={addGoal}
-                      className="w-full rounded-[20px] bg-gradient-to-r from-cyan-400 to-cyan-500 py-4 text-black font-black text-lg"
+                      className="w-full rounded-[18px] sm:rounded-[20px] bg-gradient-to-r from-cyan-400 to-cyan-500 py-3 sm:py-4 text-black font-black text-sm sm:text-lg"
                     >
                       {editingGoalId ? 'Guardar cambios' : 'Guardar meta'}
                     </button>
@@ -2060,8 +2083,8 @@ export default function FinanzasHeidy() {
               </div>
             )}
           </>
-        )}
-      </div>
+        )}      </div>
     </div>
+    </>
   )
 }
