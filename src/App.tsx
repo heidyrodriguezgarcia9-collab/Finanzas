@@ -76,7 +76,7 @@ const auth = getAuth(firebaseApp)
 const provider = new GoogleAuthProvider()
 
 export default function FinanzasHeidy() {
-  const money = (value?: number | string) => Number(value || 0).toLocaleString()
+const money = (value?: number | string | null) => Number(value ?? 0).toLocaleString()
 
   const safeParse = (key: string) => {
     if (typeof window === 'undefined') return []
