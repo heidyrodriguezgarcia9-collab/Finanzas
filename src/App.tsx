@@ -94,6 +94,7 @@ export default function FinanzasHeidy() {
   const [selectedMonth, setSelectedMonth] = useState(currentMonth)
   const [user, setUser] = useState<any>(null)
   const [loadingCloud, setLoadingCloud] = useState(true)
+  const [workspaceLoaded, setWorkspaceLoaded] = useState(false)
   const [sharedWorkspaceId, setSharedWorkspaceId] = useState(
     () => localStorage.getItem('finanzas-shared-id') || ''
   )
@@ -183,16 +184,23 @@ export default function FinanzasHeidy() {
   useEffect(() => {
     if (!user) return
 
+    setWorkspaceLoaded(false)
+
     const unsubscribe = onSnapshot(
       doc(db, 'workspaces', sharedWorkspaceId || user.uid),
       (snapshot) => {
         const data = snapshot.data()
 
-        if (!data) return
+        if (!data) {
+          setWorkspaceLoaded(true)
+          return
+        }
 
         if (data.accounts) setAccounts(data.accounts)
         if (data.goals) setGoals(data.goals)
         if (data.expenses) setExpenses(data.expenses)
+
+        setWorkspaceLoaded(true)
       }
     )
 
@@ -200,14 +208,14 @@ export default function FinanzasHeidy() {
   }, [user, sharedWorkspaceId])
 
   useEffect(() => {
-    if (!user) return
+    if (!user || !workspaceLoaded) return
 
     setDoc(doc(db, 'workspaces', sharedWorkspaceId || user.uid), {
       accounts,
       goals,
       expenses,
     })
-  }, [accounts, goals, expenses, user, sharedWorkspaceId])
+  }, [accounts, goals, expenses, user, sharedWorkspaceId, workspaceLoaded])
 
   useEffect(() => {
     localStorage.setItem('finanzas-goals', JSON.stringify(goals))
@@ -740,6 +748,7 @@ export default function FinanzasHeidy() {
 
                     localStorage.setItem('finanzas-shared-id', sharedWorkspaceId.trim())
                     setSharedWorkspaceId(sharedWorkspaceId.trim())
+                    setWorkspaceLoaded(false)
                     alert('Modo pareja conectado 💕')
                   }}
                   className="px-2 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 text-[10px] sm:text-xs font-black"
