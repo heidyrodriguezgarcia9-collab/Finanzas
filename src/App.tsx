@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react'
-
 interface Account {
   id: number
   bank: string
@@ -94,6 +93,7 @@ export default function FinanzasHeidy() {
   const [selectedMonth, setSelectedMonth] = useState(currentMonth)
   const [user, setUser] = useState<any>(null)
   const [loadingCloud, setLoadingCloud] = useState(true)
+  const SESSION_TIMEOUT = 1000 * 60 * 60 * 24 * 7
 
   const [accounts, setAccounts] = useState<Account[]>(() => safeParse('finanzas-accounts'))
   const [goals, setGoals] = useState<Goal[]>(() => safeParse('finanzas-goals'))
@@ -148,8 +148,23 @@ export default function FinanzasHeidy() {
   }, [accounts])
 
   useEffect(() => {
+    const lastLogin = localStorage.getItem('finanzas-last-login')
+
+    if (lastLogin) {
+      const expired = Date.now() - Number(lastLogin) > SESSION_TIMEOUT
+
+      if (expired) {
+        signOut(auth)
+        localStorage.removeItem('finanzas-last-login')
+      }
+    }
+
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser)
+
+      if (firebaseUser) {
+        localStorage.setItem('finanzas-last-login', String(Date.now()))
+      }
       setLoadingCloud(false)
     })
 
@@ -547,7 +562,7 @@ export default function FinanzasHeidy() {
           </div>
         </div>
       </div>
-    )
+)
   }
 
   return (
@@ -588,7 +603,7 @@ export default function FinanzasHeidy() {
         </div>
 
         <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide w-full sm:w-auto snap-x snap-mandatory">
+          <div className="finanzas-tabs flex gap-2 overflow-x-auto pb-1 w-full sm:w-auto snap-x snap-mandatory">
           {['Resumen', 'Ahorros', 'Cuentas y tarjetas', 'Gastos'].map((tab) => (
             <button
               key={tab}
