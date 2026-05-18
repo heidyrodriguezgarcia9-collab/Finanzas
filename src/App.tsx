@@ -4,7 +4,7 @@ interface Account {
   bank: string
   type: string
   owner: string
-  balance: number
+  balance?: number
   payroll?: number
   payrollOne?: string
   payrollTwo?: string
@@ -20,6 +20,7 @@ interface Account {
   cutDay?: string
   paymentDay?: string
   color?: string
+  linkedGoal?: string
 }
 
 interface Goal {
@@ -112,6 +113,7 @@ export default function FinanzasHeidy() {
   const [goalIcon, setGoalIcon] = useState('🎯')
   const [editingGoalId, setEditingGoalId] = useState<number | null>(null)
   const [goalLocation, setGoalLocation] = useState('Efectivo')
+  const [goalErrors, setGoalErrors] = useState<any>({})
 
   const [accountBank, setAccountBank] = useState('')
   const [accountType, setAccountType] = useState('Nómina')
@@ -132,7 +134,9 @@ export default function FinanzasHeidy() {
   const [accountAutoDebitAmount, setAccountAutoDebitAmount] = useState('')
   const [accountAutoDebitDay, setAccountAutoDebitDay] = useState('')
   const [accountColor, setAccountColor] = useState('from-violet-500 to-purple-500')
+  const [accountLinkedGoal, setAccountLinkedGoal] = useState('')
   const [editingAccountId, setEditingAccountId] = useState<number | null>(null)
+  const [accountErrors, setAccountErrors] = useState<any>({})
 
   const [expenseName, setExpenseName] = useState('')
   const [expenseAmount, setExpenseAmount] = useState('')
@@ -143,6 +147,8 @@ export default function FinanzasHeidy() {
   const [expensePaid, setExpensePaid] = useState(false)
   const [editingExpenseId, setEditingExpenseId] = useState<number | null>(null)
   const [expenseAccount, setExpenseAccount] = useState('')
+  const [expenseFilter, setExpenseFilter] = useState('Todos')
+  const [expenseErrors, setExpenseErrors] = useState<any>({})
 
   useEffect(() => {
     localStorage.setItem('finanzas-accounts', JSON.stringify(accounts))
@@ -210,27 +216,38 @@ export default function FinanzasHeidy() {
   }, [expenses])
 
   const filteredExpenses = useMemo(() => {
-    return expenses.filter((expense) => {
-      if (!expense.date) return true
+    return expenses
+      .filter((expense) => {
+        if (!expense.date) return true
 
-      if (expense.frequency === 'Fijo') {
-        if (!expense.originalMonth) {
-          return true
+        if (expense.frequency === 'Fijo') {
+          if (!expense.originalMonth) {
+            return true
+          }
+
+          return expense.originalMonth <= selectedMonth
         }
 
-        return expense.originalMonth <= selectedMonth
-      }
+        return String(expense.date).startsWith(selectedMonth)
+      })
+      .filter((expense) => {
+        if (expenseFilter === 'Todos') return true
+        if (expenseFilter === 'Yo') return expense.owner === 'Yo'
+        if (expenseFilter === 'Pareja') return expense.owner === 'Pareja'
+        if (expenseFilter === 'Fijos') return expense.frequency === 'Fijo'
+        if (expenseFilter === 'Variables') return expense.frequency === 'Variable'
 
-      return String(expense.date).startsWith(selectedMonth)
-    }).map((expense) => {
-      if (expense.frequency !== 'Fijo') return expense
+        return true
+      })
+      .map((expense) => {
+        if (expense.frequency !== 'Fijo') return expense
 
-      return {
-        ...expense,
-        paid: expense.originalMonth === selectedMonth ? expense.paid : false,
-      }
-    })
-  }, [expenses, selectedMonth])
+        return {
+          ...expense,
+          paid: expense.originalMonth === selectedMonth ? expense.paid : false,
+        }
+      })
+  }, [expenses, selectedMonth, expenseFilter])
 
   const monthLabel = useMemo(() => {
     const [year, month] = selectedMonth.split('-')
@@ -254,7 +271,9 @@ export default function FinanzasHeidy() {
   }, [accounts])
 
   const totalSavings = useMemo(() => {
-    return goals.reduce((acc, item) => acc + Number(item.saved || 0), 0)
+    return goals.reduce((acc, item) => {
+      return acc + Number(item.saved || 0)
+    }, 0)
   }, [goals])
 
   const expenseCategoryData = useMemo(() => {
@@ -348,7 +367,18 @@ export default function FinanzasHeidy() {
   
 
   const addGoal = () => {
-    if (!goalName) return
+    const errors: any = {}
+
+    if (!goalName) errors.name = true
+    if (!goalTarget) errors.target = true
+    if (!goalSaved) errors.saved = true
+    if (!goalLocation) errors.location = true
+
+    setGoalErrors(errors)
+
+    if (Object.keys(errors).length > 0) {
+      return
+    }
 
     const goalData = {
       id: editingGoalId || Date.now(),
@@ -361,15 +391,50 @@ export default function FinanzasHeidy() {
       location: goalLocation,
     }
 
-    if (editingGoalId) {
-      setGoals((prev) =>
-        prev.map((goal) =>
+    const updatedGoals = editingGoalId
+      ? goals.map((goal) =>
           goal.id === editingGoalId ? goalData : goal
         )
-      )
-    } else {
-      setGoals((prev) => [...prev, goalData])
-    }
+      : [...goals, goalData]
+
+    const syncedAccounts = accounts.map((account) => {
+      const accountName = `${account.bank} - ${account.type}`
+
+      if (account.type === 'Ahorro') {
+        const total = updatedGoals
+          .filter((goal) => goal.location === accountName)
+          .reduce((acc, goal) => acc + Number(goal.saved || 0), 0)
+
+        return {
+          ...account,
+          balance: total,
+        }
+      }
+
+      return account
+    })
+
+    setGoals(updatedGoals)
+    setAccounts(syncedAccounts)
+
+    setAccounts((prev) =>
+      prev.map((account) => {
+        const accountName = `${account.bank} - ${account.type}`
+
+        if (account.type === 'Ahorro') {
+          const total = updatedGoals
+            .filter((goal) => goal.location === accountName)
+            .reduce((acc, goal) => acc + Number(goal.saved || 0), 0)
+
+          return {
+            ...account,
+            balance: total,
+          }
+        }
+
+        return account
+      })
+    )
 
     setGoalName('')
     setGoalTarget('')
@@ -378,11 +443,42 @@ export default function FinanzasHeidy() {
     setGoalDate('')
     setGoalIcon('🎯')
     setGoalLocation('Efectivo')
+    setGoalErrors({})
     setEditingGoalId(null)
     setShowGoalModal(false)
   }
 
   const addAccount = () => {
+    const errors: any = {}
+
+    if (!accountBank) errors.bank = true
+    if (!accountType) errors.type = true
+    if (!accountOwner) errors.owner = true
+
+    if (accountType === 'Ahorro') {
+      if (!accountBank) errors.bank = true
+      if (!accountType) errors.type = true
+      if (!accountOwner) errors.owner = true
+    }
+
+    if (accountType === 'Nómina') {
+      if (!accountPayrollOne) errors.payrollOne = true
+      if (!accountPayrollTwo) errors.payrollTwo = true
+      if (!accountFirstPayDay) errors.firstPayDay = true
+      if (!accountSecondPayDay) errors.secondPayDay = true
+    }
+
+    if (accountType === 'Tarjeta') {
+      if (!accountLimit) errors.limit = true
+      if (!accountAvailableCredit) errors.availableCredit = true
+      if (!accountCutDay) errors.cutDay = true
+      if (!accountPaymentDay) errors.paymentDay = true
+      if (!accountDebtAccount) errors.debtAccount = true
+    }
+
+    setAccountErrors(errors)
+
+    if (Object.keys(errors).length > 0) return
     const data = {
       id: editingAccountId || Date.now(),
       bank: accountBank,
@@ -404,6 +500,7 @@ export default function FinanzasHeidy() {
       cutDay: accountCutDay,
       paymentDay: accountPaymentDay,
       color: accountColor,
+      linkedGoal: accountLinkedGoal,
     }
 
     if (editingAccountId) {
@@ -451,11 +548,23 @@ export default function FinanzasHeidy() {
     setAccountCutDay('')
     setAccountPaymentDay('')
     setAccountColor('from-violet-500 to-purple-500')
+    setAccountLinkedGoal('')
+    setAccountErrors({})
     setEditingAccountId(null)
     setShowAccountModal(false)
   }
 
   const addExpense = () => {
+    const errors: any = {}
+
+    if (!expenseName) errors.name = true
+    if (!expenseAmount) errors.amount = true
+    if (!expenseDate) errors.date = true
+    if (!expenseAccount) errors.account = true
+
+    setExpenseErrors(errors)
+
+    if (Object.keys(errors).length > 0) return
     const data = {
       id: editingExpenseId || Date.now(),
       name: expenseName,
@@ -518,6 +627,7 @@ export default function FinanzasHeidy() {
     setExpenseCategory('🍔 Comida')
     setExpensePaid(false)
     setExpenseAccount('')
+    setExpenseErrors({})
     setEditingExpenseId(null)
     setShowExpenseModal(false)
   }
@@ -1186,6 +1296,7 @@ export default function FinanzasHeidy() {
                               setAccountCutDay(account.cutDay || '')
                               setAccountPaymentDay(account.paymentDay || '')
                               setAccountColor(account.color || 'from-violet-500 to-purple-500')
+                              setAccountLinkedGoal(account.linkedGoal || '')
                               setShowAccountModal(true)
                             }}
                             className="w-9 h-9 rounded-[14px] bg-black/20 text-sm"
@@ -1194,7 +1305,33 @@ export default function FinanzasHeidy() {
                           </button>
 
                           <button
-                            onClick={() => setAccounts((prev) => prev.filter((item) => item.id !== account.id))}
+                            onClick={() => {
+                              const accountName = `${account.bank} - ${account.type}`
+
+                              const linkedGoals = goals.filter(
+                                (goal) => goal.location === accountName
+                              )
+
+                              if (linkedGoals.length > 0) {
+                                const confirmDelete = window.confirm(
+                                  `Esta cuenta está vinculada a ${linkedGoals.length} meta(s) de ahorro. ¿Seguro que deseas eliminarla?`
+                                )
+
+                                if (!confirmDelete) return
+
+                                setGoals((prev) =>
+                                  prev.map((goal) =>
+                                    goal.location === accountName
+                                      ? { ...goal, location: 'Efectivo' }
+                                      : goal
+                                  )
+                                )
+                              }
+
+                              setAccounts((prev) =>
+                                prev.filter((item) => item.id !== account.id)
+                              )
+                            }}
                             className="w-9 h-9 rounded-[14px] bg-red-500/20 text-sm"
                           >
                             🗑️
@@ -1205,7 +1342,9 @@ export default function FinanzasHeidy() {
 
                     <div className="p-4 space-y-3">
                       <div>
-                        <p className="text-white/40 text-xs uppercase">Disponible</p>
+                        <p className="text-white/40 text-xs uppercase">
+                          {account.type === 'Ahorro' ? 'Ahorro actual' : 'Disponible'}
+                        </p>
                         <h2 className="text-3xl font-black text-cyan-300 mt-1">
                           RD${money(account.balance)}
                         </h2>
@@ -1227,6 +1366,26 @@ export default function FinanzasHeidy() {
                           </h4>
                         </div>
                       </div>
+
+                      {account.type === 'Ahorro' && (
+                        <div className="rounded-[16px] bg-emerald-500/10 border border-emerald-500/20 p-4">
+                          <div className="flex items-center justify-between gap-3">
+                            <div>
+                              <p className="text-emerald-300 text-xs uppercase">
+                                Cuenta de ahorro
+                              </p>
+
+                              <h4 className="font-black text-lg mt-2">
+                                RD${money(account.balance)}
+                              </h4>
+                            </div>
+
+                            <div className="text-4xl">
+                              💰
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
                       {account.type === 'Nómina' && (
                         <>
@@ -1366,14 +1525,25 @@ export default function FinanzasHeidy() {
                   </div>
 
                   <div className="grid grid-cols-4 sm:grid-cols-4 gap-2 sm:gap-3 mb-5">
-                    {[
-                      'from-violet-500 to-purple-500',
-                      'from-pink-500 to-rose-500',
-                      'from-fuchsia-500 to-violet-600',
-                      'from-indigo-500 to-fuchsia-500',
-                      'from-emerald-500 to-green-500',
-                      'from-orange-500 to-yellow-500',
-                    ].map((color) => (
+                    {(
+                      accountType === 'Tarjeta'
+                        ? [
+                            'from-red-500 to-rose-600',
+                            'from-orange-500 to-red-500',
+                            'from-amber-500 to-orange-600',
+                            'from-pink-500 to-rose-500',
+                            'from-slate-700 to-slate-900',
+                            'from-zinc-700 to-black',
+                          ]
+                        : [
+                            'from-violet-500 to-purple-500',
+                            'from-pink-500 to-rose-500',
+                            'from-fuchsia-500 to-violet-600',
+                            'from-indigo-500 to-fuchsia-500',
+                            'from-emerald-500 to-green-500',
+                            'from-cyan-500 to-blue-500',
+                          ]
+                    ).map((color) => (
                       <button
                         key={color}
                         onClick={() => setAccountColor(color)}
@@ -1383,18 +1553,49 @@ export default function FinanzasHeidy() {
                   </div>
 
                   <div className="space-y-3 sm:space-y-4">
-                    <input
+                    <div className="max-h-[220px] overflow-y-auto no-scrollbar rounded-[18px] sm:rounded-[20px]">
+                    <select
                       value={accountBank}
                       onChange={(e) => setAccountBank(e.target.value)}
-                      placeholder="Banco o nombre"
-                      className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base"
-                    />
+                      className={`w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base text-white ${accountErrors.bank ? 'border-red-500 bg-red-500/10' : 'border-white/10'}`}
+                    >
+                      <option value="" className="bg-[#0B1120]">
+                        Seleccionar banco
+                      </option>
+
+                      {[
+                        'Banreservas',
+                        'Popular',
+                        'BHD',
+                        'BDI',
+                        'Santa Cruz',
+                        'APAP',
+                        'Asociación Cibao',
+                        'Scotiabank',
+                        'Promerica',
+                        'Lafise',
+                        'Ademi',
+                        'Caribe',
+                        'Vimenca',
+                        'Qik',
+                        'JMMB',
+                      ].map((bank) => (
+                        <option
+                          key={bank}
+                          value={bank}
+                          className="bg-[#0B1120]"
+                        >
+                          {bank}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <select
                         value={accountType}
                         onChange={(e) => setAccountType(e.target.value)}
-                        className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base text-white"
+                        className={`w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base text-white ${accountErrors.type ? 'border-red-500 bg-red-500/10' : 'border-white/10'}`}
                       >
                         <option className="bg-[#0B1120]">Nómina</option>
                         <option className="bg-[#0B1120]">Tarjeta</option>
@@ -1404,14 +1605,27 @@ export default function FinanzasHeidy() {
                       <select
                         value={accountOwner}
                         onChange={(e) => setAccountOwner(e.target.value)}
-                        className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base text-white"
+                        className={`w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base text-white ${accountErrors.owner ? 'border-red-500 bg-red-500/10' : 'border-white/10'}`}
                       >
                         <option className="bg-[#0B1120]">Yo</option>
                         <option className="bg-[#0B1120]">Pareja</option>
+                        <option className="bg-[#0B1120]">Compartida</option>
                       </select>
                     </div>
 
                     
+
+                    {accountType === 'Ahorro' && (
+                      <>
+                        <input
+                          value={accountBalance}
+                          onChange={(e) => setAccountBalance(e.target.value)}
+                          placeholder="Monto actual ahorrado *"
+                          className={`w-full rounded-[18px] sm:rounded-[20px] border px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base ${accountErrors.balance ? 'border-red-500 bg-red-500/10' : 'bg-emerald-500/10 border-emerald-500/20'}`}
+                        />
+
+                        </>
+                    )}
 
                     {accountType === 'Nómina' && (
                       <>
@@ -1419,15 +1633,15 @@ export default function FinanzasHeidy() {
                           <input
                             value={accountPayrollOne}
                             onChange={(e) => setAccountPayrollOne(e.target.value)}
-                            placeholder="Monto primera quincena"
-                            className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base"
+                            placeholder="Monto primera quincena *"
+                            className={`w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base ${goalErrors.name ? 'border-red-500 bg-red-500/10' : 'border-white/10'}`}
                           />
 
                           <input
                             value={accountPayrollTwo}
                             onChange={(e) => setAccountPayrollTwo(e.target.value)}
-                            placeholder="Monto segunda quincena"
-                            className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base"
+                            placeholder="Monto segunda quincena *"
+                            className={`w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base ${goalErrors.name ? 'border-red-500 bg-red-500/10' : 'border-white/10'}`}
                           />
                         </div>
 
@@ -1436,7 +1650,7 @@ export default function FinanzasHeidy() {
                             value={accountFirstPayDay}
                             onChange={(e) => setAccountFirstPayDay(e.target.value)}
                             placeholder="Día primer pago"
-                            className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base"
+                            className={`w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base ${goalErrors.name ? 'border-red-500 bg-red-500/10' : 'border-white/10'}`}
                           />
 
                           <input
@@ -1478,14 +1692,14 @@ export default function FinanzasHeidy() {
                           <input
                             value={accountLimit}
                             onChange={(e) => setAccountLimit(e.target.value)}
-                            placeholder="Límite tarjeta"
+                            placeholder="Límite tarjeta *"
                             className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base"
                           />
 
                           <input
                             value={accountAvailableCredit}
                             onChange={(e) => setAccountAvailableCredit(e.target.value)}
-                            placeholder="Crédito disponible"
+                            placeholder="Crédito disponible *"
                             className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base"
                           />
                         </div>
@@ -1500,7 +1714,7 @@ export default function FinanzasHeidy() {
                         <select
                           value={accountDebtAccount}
                           onChange={(e) => setAccountDebtAccount(e.target.value)}
-                          className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base text-white"
+                          className={`w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base text-white ${goalErrors.location ? 'border-red-500 bg-red-500/10' : 'border-white/10'}`}
                         >
                           <option value="" className="bg-[#0B1120]">
                             ¿Desde qué cuenta pagarás?
@@ -1520,21 +1734,31 @@ export default function FinanzasHeidy() {
                         </select>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                          <label className="text-xs uppercase tracking-wider text-orange-300 font-black block">
+                            Fecha de corte
+                          </label>
+
                           <input
                             value={accountCutDay}
                             onChange={(e) => setAccountCutDay(e.target.value)}
                             type="date"
-                            placeholder="Fecha de corte"
                             className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base"
                           />
+                        </div>
+
+                          <div className="space-y-2">
+                          <label className="text-xs uppercase tracking-wider text-cyan-300 font-black block">
+                            Fecha límite de pago
+                          </label>
 
                           <input
                             value={accountPaymentDay}
                             onChange={(e) => setAccountPaymentDay(e.target.value)}
                             type="date"
-                            placeholder="Fecha de pago"
                             className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base"
                           />
+                        </div>
                         </div>
                       </>
                     )}
@@ -1589,7 +1813,8 @@ export default function FinanzasHeidy() {
                 {['Todos', 'Yo', 'Pareja', 'Fijos', 'Variables'].map((filter) => (
                   <button
                     key={filter}
-                    className="px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm bg-white/[0.05] border border-white/10 text-sm hover:bg-cyan-500/20"
+                    onClick={() => setExpenseFilter(filter)}
+                    className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm border text-sm transition-all ${expenseFilter === filter ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300' : 'bg-white/[0.05] border-white/10 text-white/70 hover:bg-cyan-500/20'}`}
                   >
                     {filter}
                   </button>
@@ -1727,14 +1952,14 @@ export default function FinanzasHeidy() {
                         value={expenseName}
                         onChange={(e) => setExpenseName(e.target.value)}
                         placeholder="Netflix, alquiler..."
-                        className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base"
+                        className={`w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base ${expenseErrors.name ? 'border-red-500 bg-red-500/10' : 'border-white/10'}`}
                       />
 
                       <input
                         value={expenseAmount}
                         onChange={(e) => setExpenseAmount(e.target.value)}
-                        placeholder="Monto"
-                        className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base"
+                        placeholder="Monto *"
+                        className={`w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base ${expenseErrors.amount ? 'border-red-500 bg-red-500/10' : 'border-white/10'}`}
                       />
                     </div>
 
@@ -1766,15 +1991,15 @@ export default function FinanzasHeidy() {
                           max="31"
                           value={expenseDate}
                           onChange={(e) => setExpenseDate(e.target.value)}
-                          placeholder="Día del mes"
-                          className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base"
+                          placeholder="Día del mes *"
+                          className={`w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base ${expenseErrors.date ? 'border-red-500 bg-red-500/10' : 'border-white/10'}`}
                         />
                       ) : (
                         <input
                           type="date"
                           value={expenseDate}
                           onChange={(e) => setExpenseDate(e.target.value)}
-                          className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base"
+                          className={`w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base ${expenseErrors.date ? 'border-red-500 bg-red-500/10' : 'border-white/10'}`}
                         />
                       )}
 
@@ -1795,7 +2020,7 @@ export default function FinanzasHeidy() {
                     <select
                       value={expenseAccount}
                       onChange={(e) => setExpenseAccount(e.target.value)}
-                      className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base text-white"
+                      className={`w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base text-white ${expenseErrors.account ? 'border-red-500 bg-red-500/10' : 'border-white/10'}`}
                     >
                       <option value="" className="bg-[#0B1120]">
                         Seleccionar cuenta o tarjeta
@@ -1961,7 +2186,9 @@ export default function FinanzasHeidy() {
                           </p>
 
                           <h4 className="text-base font-black text-emerald-300 mt-1">
-                            RD${money(goal.saved)}
+                            RD${money(
+                              goal.saved
+                            )}
                           </h4>
                         </div>
 
@@ -2054,24 +2281,33 @@ export default function FinanzasHeidy() {
                   <div className="space-y-3 sm:space-y-4">
                     <input
                       value={goalName}
-                      onChange={(e) => setGoalName(e.target.value)}
-                      placeholder="Nombre de la meta"
-                      className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base"
+                      onChange={(e) => {
+                        setGoalName(e.target.value)
+
+                        if (e.target.value.trim()) {
+                          setGoalErrors((prev: any) => ({
+                            ...prev,
+                            name: false,
+                          }))
+                        }
+                      }}
+                      placeholder="Nombre de la meta *"
+                      className={`w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base ${goalErrors.name ? 'border-red-500 bg-red-500/10' : 'border-white/10'}`}
                     />
 
                     <input
                       value={goalTarget}
                       onChange={(e) => setGoalTarget(e.target.value)}
-                      placeholder="Monto meta"
-                      className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base"
+                      placeholder="Monto meta *"
+                      className={`w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base ${goalErrors.target ? 'border-red-500 bg-red-500/10' : 'border-white/10'}`}
                     />
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <input
                         value={goalSaved}
                         onChange={(e) => setGoalSaved(e.target.value)}
-                        placeholder="Ahorro acumulado"
-                        className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base"
+                        placeholder="Ahorro acumulado *"
+                        className={`w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base ${goalErrors.saved ? 'border-red-500 bg-red-500/10' : 'border-white/10'}`}
                       />
 
                       <input
@@ -2082,12 +2318,22 @@ export default function FinanzasHeidy() {
                       />
                     </div>
 
-                    <select
+                    <div className="space-y-2">
+                      <label className="text-xs uppercase tracking-wider text-cyan-300 font-black block">
+                        ¿Dónde está o guardarás este ahorro?
+                      </label>
+
+                      <select
                       value={goalLocation}
                       onChange={(e) => setGoalLocation(e.target.value)}
-                      className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base text-white"
+                      className={`w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base text-white ${goalErrors.location ? 'border-red-500 bg-red-500/10' : 'border-white/10'}`}
                     >
+                      <option value="" className="bg-[#0B1120]">
+                        ¿En qué cuenta o lugar guardarás este ahorro? *
+                      </option>
+
                       <option className="bg-[#0B1120]">Efectivo</option>
+
                       {accounts.map((account) => (
                         <option
                           key={account.id}
@@ -2098,13 +2344,20 @@ export default function FinanzasHeidy() {
                         </option>
                       ))}
                     </select>
+                    </div>
 
-                    <input
-                      type="date"
-                      value={goalDate}
-                      onChange={(e) => setGoalDate(e.target.value)}
-                      className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base"
-                    />
+                    <div className="space-y-2">
+                      <label className="text-xs uppercase tracking-wider text-cyan-300 font-black block">
+                        Fecha objetivo de la meta
+                      </label>
+
+                      <input
+                        type="date"
+                        value={goalDate}
+                        onChange={(e) => setGoalDate(e.target.value)}
+                        className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base"
+                      />
+                    </div>
 
                     <button
                       onClick={addGoal}
