@@ -37,6 +37,7 @@ interface Goal {
 
 interface Expense {
   id: number
+  cardId?: number
   name: string
   amount: number
   frequency: string
@@ -544,6 +545,7 @@ export default function FinanzasHeidy() {
             category: '💳 Préstamo',
             paid: false,
             account: accountDebtAccount,
+            cardId: data.id,
           },
           ...prev,
         ])
@@ -1413,10 +1415,18 @@ export default function FinanzasHeidy() {
                     <div className="p-4 space-y-3">
                       <div>
                         <p className="text-white/40 text-xs uppercase">
-                          {account.type === 'Ahorro' ? 'Ahorro actual' : 'Disponible'}
+                          {account.type === 'Ahorro'
+                            ? 'Ahorro actual'
+                            : account.type === 'Tarjeta'
+                            ? 'Disponible crédito'
+                            : 'Disponible'}
                         </p>
                         <h2 className="text-3xl font-black text-cyan-300 mt-1">
-                          RD${money(account.balance)}
+                          RD${money(
+                            account.type === 'Tarjeta'
+                              ? account.availableCredit || 0
+                              : account.balance || 0
+                          )}
                         </h2>
                       </div>
 
@@ -1950,15 +1960,55 @@ export default function FinanzasHeidy() {
 
                         <div className="flex gap-2">
                           <button
-                            onClick={() =>
+                            onClick={() => {
+                              const nextPaid = !expense.paid
+
                               setExpenses((prev) =>
                                 prev.map((item) =>
                                   item.id === expense.id
-                                    ? { ...item, paid: !item.paid }
+                                    ? { ...item, paid: nextPaid }
                                     : item
                                 )
                               )
-                            }
+
+                              const relatedCard = accounts.find(
+                                (acc) => acc.id === expense.cardId
+                              )
+
+                              if (relatedCard) {
+                                setAccounts((prev) =>
+                                  prev.map((account) => {
+                                    if (account.id === relatedCard.id) {
+                                      const amount = Number(String(expense.amount || 0))
+
+                                      if (nextPaid) {
+                                        return {
+                                          ...account,
+                                          debt: Math.max(
+                                            0,
+                                            Number(String(account.debt || 0)) - amount
+                                          ),
+                                          availableCredit:
+                                            Number(String(account.availableCredit || 0)) + amount,
+                                        }
+                                      }
+
+                                      return {
+                                        ...account,
+                                        debt:
+                                          Number(String(account.debt || 0)) + amount,
+                                        availableCredit: Math.max(
+                                          0,
+                                          Number(String(account.availableCredit || 0)) - amount
+                                        ),
+                                      }
+                                    }
+
+                                    return account
+                                  })
+                                )
+                              }
+                            }}
                             className={`px-3 py-2 rounded-xl text-xs font-bold ${expense.paid ? 'bg-emerald-500/20 text-emerald-300' : 'bg-yellow-500/20 text-yellow-300'}`}
                           >
                             {expense.paid ? 'Pagado' : 'Marcar'}
