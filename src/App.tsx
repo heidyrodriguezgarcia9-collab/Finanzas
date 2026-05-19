@@ -99,10 +99,12 @@ export default function FinanzasHeidy() {
   const [workspaceLoaded, setWorkspaceLoaded] = useState(false)
   const [cloudInitialized, setCloudInitialized] = useState(false)
   const syncingRef = useRef(false)
+  const firstCloudLoadRef = useRef(false)
   const initializedRef = useRef(false)
   const [sharedWorkspaceId, setSharedWorkspaceId] = useState(
     () => localStorage.getItem('finanzas-shared-id') || ''
   )
+  const [partnerInput, setPartnerInput] = useState('')
   const SESSION_TIMEOUT = 1000 * 60 * 60 * 24 * 7
 
   const [accounts, setAccounts] = useState<Account[]>([])
@@ -264,6 +266,7 @@ export default function FinanzasHeidy() {
     if (!user) return
 
     setWorkspaceLoaded(false)
+    firstCloudLoadRef.current = false
 
     const workspaceId = sharedWorkspaceId || user.uid
 
@@ -279,6 +282,8 @@ export default function FinanzasHeidy() {
         setGoals(data?.goals || [])
         setExpenses(data?.expenses || [])
 
+        firstCloudLoadRef.current = true
+
         setWorkspaceLoaded(true)
         setCloudInitialized(true)
 
@@ -292,7 +297,15 @@ export default function FinanzasHeidy() {
   }, [user, sharedWorkspaceId])
 
   useEffect(() => {
-    if (!user || !initializedRef.current || syncingRef.current) return
+    if (!user) return
+
+    if (!initializedRef.current) return
+
+    if (!firstCloudLoadRef.current) return
+
+    if (syncingRef.current) return
+
+    if (!workspaceLoaded || !cloudInitialized) return
 
     setDoc(doc(db, 'workspaces', sharedWorkspaceId || user.uid), {
       accounts,
@@ -986,15 +999,15 @@ export default function FinanzasHeidy() {
             {user && (
               <div className="flex items-center gap-2 rounded-2xl bg-white/5 border border-white/10 px-3 py-2">
                 <input
-                  value={sharedWorkspaceId}
-                  onChange={(e) => setSharedWorkspaceId(e.target.value)}
+                  value={partnerInput}
+                  onChange={(e) => setPartnerInput(e.target.value)}
                   placeholder="Pegar ID pareja"
                   className="bg-transparent outline-none text-xs sm:text-sm text-cyan-200 placeholder:text-white/30 w-[100px] sm:w-[140px]"
                 />
 
                 <button
                   onClick={() => {
-                    const partnerId = sharedWorkspaceId.trim()
+                    const partnerId = partnerInput.trim()
 
                     if (!partnerId) {
                       alert('Pega un ID primero')
@@ -1008,9 +1021,7 @@ export default function FinanzasHeidy() {
                     setCloudInitialized(false)
                     initializedRef.current = false
 
-                    setAccounts([])
-                    setGoals([])
-                    setExpenses([])
+                    
 
                     alert('Modo pareja conectado 💕')
                   }}
@@ -1039,9 +1050,7 @@ export default function FinanzasHeidy() {
                       setCloudInitialized(false)
                       initializedRef.current = false
 
-                      setAccounts([])
-                      setGoals([])
-                      setExpenses([])
+                      
 
                       alert('Saliste del modo pareja 💔')
                     }}
