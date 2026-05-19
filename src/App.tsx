@@ -326,8 +326,8 @@ export default function FinanzasHeidy() {
       .reduce(
         (acc, item) =>
           acc +
-          Number(item.payrollOne || 0) +
-          Number(item.payrollTwo || 0),
+          Number(String(item.payrollOne ?? 0)) +
+          Number(String(item.payrollTwo ?? 0)),
         0
       )
   }, [accounts])
@@ -346,8 +346,8 @@ export default function FinanzasHeidy() {
       .reduce(
         (acc, item) =>
           acc +
-          Number(item.payrollOne || 0) +
-          Number(item.payrollTwo || 0),
+          Number(String(item.payrollOne ?? 0)) +
+          Number(String(item.payrollTwo ?? 0)),
         0
       )
   }, [accounts])
@@ -358,8 +358,8 @@ export default function FinanzasHeidy() {
       .reduce(
         (acc, item) =>
           acc +
-          Number(item.payrollOne || 0) +
-          Number(item.payrollTwo || 0),
+          Number(String(item.payrollOne ?? 0)) +
+          Number(String(item.payrollTwo ?? 0)),
         0
       )
   }, [accounts])
