@@ -76,7 +76,7 @@ const auth = getAuth(firebaseApp)
 const provider = new GoogleAuthProvider()
 
 export default function FinanzasHeidy() {
-const money = (value?: number | string | null | undefined) => Number(value ?? 0).toLocaleString()
+  const money = (value?: number | string) => Number(value || 0).toLocaleString()
 
   const safeParse = (key: string) => {
     if (typeof window === 'undefined') return []
@@ -268,9 +268,11 @@ const money = (value?: number | string | null | undefined) => Number(value ?? 0)
   }, [expenses, selectedMonth, expenseFilter])
 
   const monthLabel = useMemo(() => {
-    const [year = '0', month = '0'] = selectedMonth.split('-')
+    const parts = String(selectedMonth || '0-0').split('-')
+    const year = parts[0] || '0'
+    const month = parts[1] || '0'
 
-    return new Date(Number(year), Number(month) - 1).toLocaleDateString('es-DO', {
+    return new Date(Number(year || 0), Number(month || 0) - 1).toLocaleDateString('es-DO', {
       month: 'long',
       year: 'numeric',
     })
@@ -1029,10 +1031,10 @@ const money = (value?: number | string | null | undefined) => Number(value ?? 0)
                       className="absolute inset-0 rounded-full"
                       style={{
                         background: `conic-gradient(
-                          #22d3ee 0% ${(expenseCategoryData['🍔 Comida'] / Math.max(totalCategoryExpenses, 1)) * 100}%,
-                          #f59e0b ${(expenseCategoryData['🍔 Comida'] / Math.max(totalCategoryExpenses, 1)) * 100}% ${((expenseCategoryData['🍔 Comida'] + expenseCategoryData['🚗 Transporte']) / Math.max(totalCategoryExpenses, 1)) * 100}%,
-                          #ef4444 ${((expenseCategoryData['🍔 Comida'] + expenseCategoryData['🚗 Transporte']) / Math.max(totalCategoryExpenses, 1)) * 100}% ${((expenseCategoryData['🍔 Comida'] + expenseCategoryData['🚗 Transporte'] + expenseCategoryData['💳 Préstamo']) / Math.max(totalCategoryExpenses, 1)) * 100}%,
-                          #a855f7 ${((expenseCategoryData['🍔 Comida'] + expenseCategoryData['🚗 Transporte'] + expenseCategoryData['💳 Préstamo']) / Math.max(totalCategoryExpenses, 1)) * 100}% 100%
+                          #22d3ee 0% ${(expenseCategoryData['🍔 Comida'] / Math.max(Number(totalCategoryExpenses || 1), 1)) * 100}%,
+                          #f59e0b ${(expenseCategoryData['🍔 Comida'] / Math.max(Number(totalCategoryExpenses || 1), 1)) * 100}% ${((expenseCategoryData['🍔 Comida'] + expenseCategoryData['🚗 Transporte']) / Math.max(Number(totalCategoryExpenses || 1), 1)) * 100}%,
+                          #ef4444 ${((expenseCategoryData['🍔 Comida'] + expenseCategoryData['🚗 Transporte']) / Math.max(Number(totalCategoryExpenses || 1), 1)) * 100}% ${((expenseCategoryData['🍔 Comida'] + expenseCategoryData['🚗 Transporte'] + expenseCategoryData['💳 Préstamo']) / Math.max(Number(totalCategoryExpenses || 1), 1)) * 100}%,
+                          #a855f7 ${((expenseCategoryData['🍔 Comida'] + expenseCategoryData['🚗 Transporte'] + expenseCategoryData['💳 Préstamo']) / Math.max(Number(totalCategoryExpenses || 1), 1)) * 100}% 100%
                         )`,
                       }}
                     />
@@ -1192,7 +1194,7 @@ const money = (value?: number | string | null | undefined) => Number(value ?? 0)
                           width: `${Math.min(
                             100,
                             (myAvailable /
-                              Math.max(myAvailable, partnerAvailable, 1)) *
+                              Math.max(Number(myAvailable || 0), Number(partnerAvailable || 0), 1)) *
                               100
                           )}%`,
                         }}
@@ -1215,7 +1217,7 @@ const money = (value?: number | string | null | undefined) => Number(value ?? 0)
                           width: `${Math.min(
                             100,
                             (partnerAvailable /
-                              Math.max(myAvailable, partnerAvailable, 1)) *
+                              Math.max(Number(myAvailable || 0), Number(partnerAvailable || 0), 1)) *
                               100
                           )}%`,
                         }}
