@@ -109,6 +109,35 @@ export default function FinanzasHeidy() {
   const [goals, setGoals] = useState<Goal[]>([])
   const [expenses, setExpenses] = useState<Expense[]>([])
 
+  useEffect(() => {
+    const today = new Date()
+      const currentDay = today.getDate()
+      const currentMonthKey = today.toISOString().slice(0, 7)
+
+    setExpenses((prev) =>
+      prev.map((expense) => {
+        if (expense.frequency !== 'Fijo') return expense
+
+        const relatedAccount = accounts.find(
+          (acc) => `${acc.bank} - ${acc.type}` === expense.account
+        )
+
+        if (
+          relatedAccount?.type === 'Nómina' &&
+          relatedAccount.autoDebitName === expense.name &&
+          currentDay >= Number(String(relatedAccount.autoDebitDay || 0))
+        ) {
+          return {
+            ...expense,
+            paid: true,
+          }
+        }
+
+        return expense
+      })
+    )
+  }, [selectedMonth, accounts])
+
   const [showGoalModal, setShowGoalModal] = useState(false)
   const [showAccountModal, setShowAccountModal] = useState(false)
   const [showExpenseModal, setShowExpenseModal] = useState(false)
@@ -161,6 +190,51 @@ export default function FinanzasHeidy() {
   useEffect(() => {
     localStorage.setItem('finanzas-accounts', JSON.stringify(accounts))
   }, [accounts])
+
+  useEffect(() => {
+    const today = new Date()
+    const currentDay = today.getDate()
+
+    setAccounts((prev) =>
+      prev.map((account) => {
+        if (account.type !== 'Nómina') return account
+
+        let balance = Number(String(account.balance || 0))
+
+        const firstAmount = Number(String(account.payrollOne || 0))
+        const secondAmount = Number(String(account.payrollTwo || 0))
+
+        const firstPayDay = Number(String(account.firstPayDay || 0))
+        const secondPayDay = Number(String(account.secondPayDay || 0))
+
+        const firstKey = `salary-${selectedMonth}-${account.id}-1`
+        const secondKey = `salary-${selectedMonth}-${account.id}-2`
+
+        if (
+          currentDay >= firstPayDay &&
+          firstPayDay > 0 &&
+          !localStorage.getItem(firstKey)
+        ) {
+          balance += firstAmount
+          localStorage.setItem(firstKey, 'true')
+        }
+
+        if (
+          currentDay >= secondPayDay &&
+          secondPayDay > 0 &&
+          !localStorage.getItem(secondKey)
+        ) {
+          balance += secondAmount
+          localStorage.setItem(secondKey, 'true')
+        }
+
+        return {
+          ...account,
+          balance,
+        }
+      })
+    )
+  }, [selectedMonth])
 
   useEffect(() => {
     const lastLogin = localStorage.getItem('finanzas-last-login')
@@ -283,14 +357,73 @@ export default function FinanzasHeidy() {
   const myAvailable = useMemo(() => {
     return accounts
       .filter((a) => a.owner === 'Yo' && a.type === 'Nómina')
-      .reduce((acc, item) => acc + Number(String(item.balance || 0)), 0)
-  }, [accounts])
+      .reduce((acc, item) => {
+        const calculatedBalance =
+          (
+            (selectedMonth === new Date().toISOString().slice(0, 7) &&
+            new Date().getDate() >= Number(item.firstPayDay || 0)
+              ? Number(item.payrollOne || 0)
+              : 0) +
+            (selectedMonth === new Date().toISOString().slice(0, 7) &&
+            new Date().getDate() >= Number(item.secondPayDay || 0)
+              ? Number(item.payrollTwo || 0)
+              : 0)
+          ) -
+          (
+            selectedMonth === new Date().toISOString().slice(0, 7) &&
+            new Date().getDate() >= Number(item.autoDebitDay || 0)
+              ? Number(item.autoDebitAmount || 0)
+              : 0
+          ) -
+          filteredExpenses
+            .filter(
+              (expense) =>
+                expense.paid &&
+                expense.account === `${item.bank} - ${item.type}`
+            )
+            .reduce(
+              (expenseAcc, expense) =>
+                expenseAcc + Number(expense.amount || 0),
+              0
+            )
+
+        return acc + calculatedBalance
+      }, 0)
+  }, [accounts, filteredExpenses])
 
   const partnerAvailable = useMemo(() => {
     return accounts
       .filter((a) => a.owner === 'Pareja' && a.type === 'Nómina')
-      .reduce((acc, item) => acc + Number(String(item.balance || 0)), 0)
-  }, [accounts])
+      .reduce((acc, item) => {
+        const calculatedBalance =
+          (
+            (new Date().getDate() >= Number(item.firstPayDay || 0)
+              ? Number(item.payrollOne || 0)
+              : 0) +
+            (new Date().getDate() >= Number(item.secondPayDay || 0)
+              ? Number(item.payrollTwo || 0)
+              : 0)
+          ) -
+          (
+            new Date().getDate() >= Number(item.autoDebitDay || 0)
+              ? Number(item.autoDebitAmount || 0)
+              : 0
+          ) -
+          filteredExpenses
+            .filter(
+              (expense) =>
+                expense.paid &&
+                expense.account === `${item.bank} - ${item.type}`
+            )
+            .reduce(
+              (expenseAcc, expense) =>
+                expenseAcc + Number(expense.amount || 0),
+              0
+            )
+
+        return acc + calculatedBalance
+      }, 0)
+  }, [accounts, filteredExpenses])
 
   const totalSavings = useMemo(() => {
     return goals.reduce((acc, item) => {
@@ -379,12 +512,56 @@ export default function FinanzasHeidy() {
   }, [filteredExpenses])
 
   const myProjectedCashFlow = useMemo(() => {
-    return myIncome - myPendingExpenses
-  }, [myIncome, myPendingExpenses])
+    const myAutoDebits = accounts
+      .filter((acc) => acc.owner === 'Yo' && acc.type === 'Nómina')
+      .reduce(
+        (acc, item) => acc + Number(String(item.autoDebitAmount || 0)),
+        0
+      )
+
+    const myTotalExpenses = expenses
+      .filter((expense) => {
+        if (expense.owner !== 'Yo') return false
+
+        if (expense.frequency === 'Fijo') {
+          return true
+        }
+
+        return String(expense.date || '').startsWith(selectedMonth)
+      })
+      .reduce(
+        (acc, item) => acc + Number(String(item.amount || 0)),
+        0
+      )
+
+    return myIncome - myTotalExpenses - myAutoDebits
+  }, [expenses, myIncome, selectedMonth, accounts])
 
   const partnerProjectedCashFlow = useMemo(() => {
-    return partnerIncome - partnerPendingExpenses
-  }, [partnerIncome, partnerPendingExpenses])
+    const partnerAutoDebits = accounts
+      .filter((acc) => acc.owner === 'Pareja' && acc.type === 'Nómina')
+      .reduce(
+        (acc, item) => acc + Number(String(item.autoDebitAmount || 0)),
+        0
+      )
+
+    const partnerTotalExpenses = expenses
+      .filter((expense) => {
+        if (expense.owner !== 'Pareja') return false
+
+        if (expense.frequency === 'Fijo') {
+          return true
+        }
+
+        return String(expense.date || '').startsWith(selectedMonth)
+      })
+      .reduce(
+        (acc, item) => acc + Number(String(item.amount || 0)),
+        0
+      )
+
+    return partnerIncome - partnerTotalExpenses - partnerAutoDebits
+  }, [expenses, partnerIncome, selectedMonth, accounts])
 
   
 
@@ -488,6 +665,27 @@ export default function FinanzasHeidy() {
       if (!accountPayrollTwo) errors.payrollTwo = true
       if (!accountFirstPayDay) errors.firstPayDay = true
       if (!accountSecondPayDay) errors.secondPayDay = true
+
+      const today = new Date()
+      const currentDay = today.getDate()
+
+      let autoBalance = 0
+
+      if (
+        selectedMonth === currentMonthKey &&
+        currentDay >= Number(accountFirstPayDay || 0)
+      ) {
+        autoBalance += Number(accountPayrollOne || 0)
+      }
+
+      if (
+        selectedMonth === currentMonthKey &&
+        currentDay >= Number(accountSecondPayDay || 0)
+      ) {
+        autoBalance += Number(accountPayrollTwo || 0)
+      }
+
+      setAccountBalance(String(autoBalance))
     }
 
     if (accountType === 'Tarjeta') {
@@ -506,7 +704,24 @@ export default function FinanzasHeidy() {
       bank: accountBank,
       type: accountType,
       owner: accountOwner,
-      balance: Number(String(accountBalance || 0)),
+      balance:
+        accountType === 'Nómina'
+          ? (
+              (
+                (new Date().getDate() >= Number(accountFirstPayDay || 0)
+                  ? Number(accountPayrollOne || 0)
+                  : 0) +
+                (new Date().getDate() >= Number(accountSecondPayDay || 0)
+                  ? Number(accountPayrollTwo || 0)
+                  : 0)
+              ) -
+              (
+                new Date().getDate() >= Number(accountAutoDebitDay || 0)
+                  ? Number(accountAutoDebitAmount || 0)
+                  : 0
+              )
+            )
+          : Number(String(accountBalance || 0)),
       payroll: Number(String(accountPayroll || 0)),
       payrollOne: accountPayrollOne,
       payrollTwo: accountPayrollTwo,
@@ -531,6 +746,30 @@ export default function FinanzasHeidy() {
       )
     } else {
       setAccounts((prev) => [...prev, data])
+
+      if (
+        accountType === 'Nómina' &&
+        accountAutoDebitName &&
+        Number(String(accountAutoDebitAmount || 0)) > 0
+      ) {
+        setExpenses((prev) => [
+          {
+            id: Date.now() + 500,
+            name: accountAutoDebitName,
+            amount: Number(String(accountAutoDebitAmount || 0)),
+            frequency: 'Fijo',
+            originalMonth: selectedMonth,
+            owner: accountOwner,
+            date: accountAutoDebitDay || '',
+            category: '💳 Préstamo',
+            paid:
+              new Date().getDate() >=
+              Number(String(accountAutoDebitDay || 0)),
+            account: `${accountBank} - ${accountType}`,
+          },
+          ...prev,
+        ])
+      }
 
       if (accountType === 'Tarjeta' && Number(String(accountDebt || 0)) > 0) {
         setExpenses((prev) => [
@@ -1423,7 +1662,32 @@ export default function FinanzasHeidy() {
                         </p>
                         <h2 className="text-3xl font-black text-cyan-300 mt-1">
                           RD${money(
-                            account.type === 'Tarjeta'
+                            account.type === 'Nómina'
+                              ? (
+                                  (
+                                    (new Date().getDate() >= Number(account.firstPayDay || 0)
+                                      ? Number(account.payrollOne || 0)
+                                      : 0) +
+                                    (new Date().getDate() >= Number(account.secondPayDay || 0)
+                                      ? Number(account.payrollTwo || 0)
+                                      : 0) -
+                                    (new Date().getDate() >= Number(account.autoDebitDay || 0)
+                                      ? Number(account.autoDebitAmount || 0)
+                                      : 0) -
+                                    filteredExpenses
+                                      .filter(
+                                        (expense) =>
+                                          expense.paid &&
+                                          expense.account === `${account.bank} - ${account.type}`
+                                      )
+                                      .reduce(
+                                        (acc, expense) =>
+                                          acc + Number(expense.amount || 0),
+                                        0
+                                      )
+                                  )
+                                )
+                              : account.type === 'Tarjeta'
                               ? account.availableCredit || 0
                               : account.balance || 0
                           )}
