@@ -668,6 +668,7 @@ export default function FinanzasHeidy() {
 
       const today = new Date()
       const currentDay = today.getDate()
+      const currentMonthKey = today.toISOString().slice(0, 7)
 
       let autoBalance = 0
 
@@ -1978,14 +1979,14 @@ export default function FinanzasHeidy() {
                             value={accountPayrollOne}
                             onChange={(e) => setAccountPayrollOne(e.target.value)}
                             placeholder="Monto primera quincena *"
-                            className={`w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base ${goalErrors.name ? 'border-red-500 bg-red-500/10' : 'border-white/10'}`}
+                            className={`w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base ${accountErrors.payrollOne ? 'border-red-500 bg-red-500/10' : 'border-white/10'}`}
                           />
 
                           <input
                             value={accountPayrollTwo}
                             onChange={(e) => setAccountPayrollTwo(e.target.value)}
                             placeholder="Monto segunda quincena *"
-                            className={`w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base ${goalErrors.name ? 'border-red-500 bg-red-500/10' : 'border-white/10'}`}
+                            className={`w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base ${accountErrors.payrollOne ? 'border-red-500 bg-red-500/10' : 'border-white/10'}`}
                           />
                         </div>
 
@@ -1993,15 +1994,15 @@ export default function FinanzasHeidy() {
                           <input
                             value={accountFirstPayDay}
                             onChange={(e) => setAccountFirstPayDay(e.target.value)}
-                            placeholder="Día primer pago"
-                            className={`w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base ${goalErrors.name ? 'border-red-500 bg-red-500/10' : 'border-white/10'}`}
+                            placeholder="Día primer pago *"
+                            className={`w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base ${accountErrors.payrollOne ? 'border-red-500 bg-red-500/10' : 'border-white/10'}`}
                           />
 
                           <input
                             value={accountSecondPayDay}
                             onChange={(e) => setAccountSecondPayDay(e.target.value)}
                             placeholder="Día segundo pago"
-                            className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base"
+                            className={`w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base ${accountErrors.secondPayDay ? 'border-red-500 bg-red-500/10' : 'border-white/10'}`}
                           />
                         </div>
 
@@ -2058,7 +2059,7 @@ export default function FinanzasHeidy() {
                         <select
                           value={accountDebtAccount}
                           onChange={(e) => setAccountDebtAccount(e.target.value)}
-                          className={`w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base text-white ${goalErrors.location ? 'border-red-500 bg-red-500/10' : 'border-white/10'}`}
+                          className={`w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base text-white ${accountErrors.debtAccount ? 'border-red-500 bg-red-500/10' : 'border-white/10'}`}
                         >
                           <option value="" className="bg-[#0B1120]">
                             ¿Desde qué cuenta pagarás?
@@ -2682,7 +2683,7 @@ export default function FinanzasHeidy() {
                         }
                       }}
                       placeholder="Nombre de la meta *"
-                      className={`w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base ${goalErrors.name ? 'border-red-500 bg-red-500/10' : 'border-white/10'}`}
+                      className={`w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base ${accountErrors.payrollOne ? 'border-red-500 bg-red-500/10' : 'border-white/10'}`}
                     />
 
                     <input
