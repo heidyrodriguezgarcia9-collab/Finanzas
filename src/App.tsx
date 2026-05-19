@@ -4,23 +4,23 @@ interface Account {
   bank: string
   type: string
   owner: string
-  balance: number       
-  payroll: number        
-  payrollOne: string    
-  payrollTwo: string   
-  limit: number          
-  availableCredit: number 
-  debt: number         
-  debtAccount: string    
-  firstPayDay: string    
-  secondPayDay: string   
-  autoDebitName: string  
-  autoDebitAmount: number 
-  autoDebitDay: string  
-  cutDay: string         
-  paymentDay: string     
-  color: string          
-  linkedGoal: string      
+  balance?: number
+  payroll?: number
+  payrollOne?: string
+  payrollTwo?: string
+  limit?: number
+  availableCredit?: number
+  debt?: number
+  debtAccount?: string
+  firstPayDay?: string
+  secondPayDay?: string
+  autoDebitName?: string
+  autoDebitAmount?: number
+  autoDebitDay?: string
+  cutDay?: string
+  paymentDay?: string
+  color?: string
+  linkedGoal?: string
 }
 
 interface Goal {
@@ -76,8 +76,7 @@ const auth = getAuth(firebaseApp)
 const provider = new GoogleAuthProvider()
 
 export default function FinanzasHeidy() {
-  const money = (value?: number | string | null | undefined): string => Number(value ?? 0).toLocaleString()
-
+  const money = (value?: number | string) => Number(String(value || 0)).toLocaleString()
 
   const safeParse = (key: string) => {
     if (typeof window === 'undefined') return []
@@ -273,7 +272,7 @@ export default function FinanzasHeidy() {
     const year = parts[0] || '0'
     const month = parts[1] || '0'
 
-    return new Date(Number(year || 0), Number(month || 0) - 1).toLocaleDateString('es-DO', {
+    return new Date(Number(String(year || 0)), Number(String(month || 0)) - 1).toLocaleDateString('es-DO', {
       month: 'long',
       year: 'numeric',
     })
@@ -282,18 +281,18 @@ export default function FinanzasHeidy() {
   const myAvailable = useMemo(() => {
     return accounts
       .filter((a) => a.owner === 'Yo' && a.type === 'Nómina')
-      .reduce((acc, item) => acc + Number(item.balance || 0), 0)
+      .reduce((acc, item) => acc + Number(String(item.balance || 0)), 0)
   }, [accounts])
 
   const partnerAvailable = useMemo(() => {
     return accounts
       .filter((a) => a.owner === 'Pareja' && a.type === 'Nómina')
-      .reduce((acc, item) => acc + Number(item.balance || 0), 0)
+      .reduce((acc, item) => acc + Number(String(item.balance || 0)), 0)
   }, [accounts])
 
   const totalSavings = useMemo(() => {
     return goals.reduce((acc, item) => {
-      return acc + Number(item.saved || 0)
+      return acc + Number(String(item.saved || 0))
     }, 0)
   }, [goals])
 
@@ -309,7 +308,7 @@ export default function FinanzasHeidy() {
       .filter((expense) => expense.paid)
       .forEach((expense) => {
         if (expense.category in categories) {
-          categories[expense.category as keyof typeof categories] += Number(expense.amount || 0)
+          categories[expense.category as keyof typeof categories] += Number(String(expense.amount || 0))
         }
       })
 
@@ -327,8 +326,8 @@ export default function FinanzasHeidy() {
       .reduce(
         (acc, item) =>
           acc +
-          Number(String(item.payrollOne ?? 0)) +
-          Number(String(item.payrollTwo ?? 0)),
+          Number(String(String(item.payrollOne ?? 0))) +
+          Number(String(String(item.payrollTwo ?? 0))),
         0
       )
   }, [accounts])
@@ -336,7 +335,7 @@ export default function FinanzasHeidy() {
   const monthlyExpenses = useMemo(() => {
     return filteredExpenses
       .filter((expense) => expense.paid)
-      .reduce((acc, item) => acc + Number(item.amount || 0), 0)
+      .reduce((acc, item) => acc + Number(String(item.amount || 0)), 0)
   }, [filteredExpenses])
 
   
@@ -347,8 +346,8 @@ export default function FinanzasHeidy() {
       .reduce(
         (acc, item) =>
           acc +
-          Number(String(item.payrollOne ?? 0)) +
-          Number(String(item.payrollTwo ?? 0)),
+          Number(String(String(item.payrollOne ?? 0))) +
+          Number(String(String(item.payrollTwo ?? 0))),
         0
       )
   }, [accounts])
@@ -359,8 +358,8 @@ export default function FinanzasHeidy() {
       .reduce(
         (acc, item) =>
           acc +
-          Number(String(item.payrollOne ?? 0)) +
-          Number(String(item.payrollTwo ?? 0)),
+          Number(String(String(item.payrollOne ?? 0))) +
+          Number(String(String(item.payrollTwo ?? 0))),
         0
       )
   }, [accounts])
@@ -368,13 +367,13 @@ export default function FinanzasHeidy() {
   const myPendingExpenses = useMemo(() => {
     return filteredExpenses
       .filter((expense) => !expense.paid && expense.owner === 'Yo')
-      .reduce((acc, item) => acc + Number(item.amount || 0), 0)
+      .reduce((acc, item) => acc + Number(String(item.amount || 0)), 0)
   }, [filteredExpenses])
 
   const partnerPendingExpenses = useMemo(() => {
     return filteredExpenses
       .filter((expense) => !expense.paid && expense.owner === 'Pareja')
-      .reduce((acc, item) => acc + Number(item.amount || 0), 0)
+      .reduce((acc, item) => acc + Number(String(item.amount || 0)), 0)
   }, [filteredExpenses])
 
   const myProjectedCashFlow = useMemo(() => {
@@ -404,9 +403,9 @@ export default function FinanzasHeidy() {
     const goalData = {
       id: editingGoalId || Date.now(),
       name: goalName,
-      target: Number(goalTarget || 0),
-      saved: Number(goalSaved || 0),
-      monthly: Number(goalMonthly || 0),
+      target: Number(String(goalTarget || 0)),
+      saved: Number(String(goalSaved || 0)),
+      monthly: Number(String(goalMonthly || 0)),
       date: goalDate,
       icon: goalIcon,
       location: goalLocation,
@@ -424,7 +423,7 @@ export default function FinanzasHeidy() {
       if (account.type === 'Ahorro') {
         const total = updatedGoals
           .filter((goal) => goal.location === accountName)
-          .reduce((acc, goal) => acc + Number(goal.saved || 0), 0)
+          .reduce((acc, goal) => acc + Number(String(goal.saved || 0)), 0)
 
         return {
           ...account,
@@ -445,7 +444,7 @@ export default function FinanzasHeidy() {
         if (account.type === 'Ahorro') {
           const total = updatedGoals
             .filter((goal) => goal.location === accountName)
-            .reduce((acc, goal) => acc + Number(goal.saved || 0), 0)
+            .reduce((acc, goal) => acc + Number(String(goal.saved || 0)), 0)
 
           return {
             ...account,
@@ -505,18 +504,18 @@ export default function FinanzasHeidy() {
       bank: accountBank,
       type: accountType,
       owner: accountOwner,
-      balance: Number(accountBalance || 0),
-      payroll: Number(accountPayroll || 0),
+      balance: Number(String(accountBalance || 0)),
+      payroll: Number(String(accountPayroll || 0)),
       payrollOne: accountPayrollOne,
       payrollTwo: accountPayrollTwo,
-      limit: Number(accountLimit || 0),
-      availableCredit: Number(accountAvailableCredit || 0),
-      debt: Number(accountDebt || 0),
+      limit: Number(String(accountLimit || 0)),
+      availableCredit: Number(String(accountAvailableCredit || 0)),
+      debt: Number(String(accountDebt || 0)),
       debtAccount: accountDebtAccount,
       firstPayDay: accountFirstPayDay,
       secondPayDay: accountSecondPayDay,
       autoDebitName: accountAutoDebitName,
-      autoDebitAmount: Number(accountAutoDebitAmount || 0),
+      autoDebitAmount: Number(String(accountAutoDebitAmount || 0)),
       autoDebitDay: accountAutoDebitDay,
       cutDay: accountCutDay,
       paymentDay: accountPaymentDay,
@@ -531,12 +530,12 @@ export default function FinanzasHeidy() {
     } else {
       setAccounts((prev) => [...prev, data])
 
-      if (accountType === 'Tarjeta' && Number(accountDebt || 0) > 0) {
+      if (accountType === 'Tarjeta' && Number(String(accountDebt || 0)) > 0) {
         setExpenses((prev) => [
           {
             id: Date.now() + 1,
             name: `Pago ${accountBank}`,
-            amount: Number(accountDebt || 0),
+            amount: Number(String(accountDebt || 0)),
             frequency: 'Fijo',
             originalMonth: selectedMonth,
             owner: accountOwner,
@@ -589,7 +588,7 @@ export default function FinanzasHeidy() {
     const data = {
       id: editingExpenseId || Date.now(),
       name: expenseName,
-      amount: Number(expenseAmount || 0),
+      amount: Number(String(expenseAmount || 0)),
       frequency: expenseFrequency,
       originalMonth:
         expenseFrequency === 'Fijo'
@@ -621,16 +620,16 @@ export default function FinanzasHeidy() {
                 return {
                   ...account,
                   availableCredit:
-                    Number(account.availableCredit || 0) - Number(expenseAmount || 0),
+                    Number(String(account.availableCredit || 0)) - Number(String(expenseAmount || 0)),
                   debt:
-                    Number(account.debt || 0) + Number(expenseAmount || 0),
+                    Number(String(account.debt || 0)) + Number(String(expenseAmount || 0)),
                 }
               }
 
               return {
                 ...account,
                 balance:
-                  Number(account.balance || 0) - Number(expenseAmount || 0),
+                  Number(String(account.balance || 0)) - Number(String(expenseAmount || 0)),
               }
             }
 
@@ -946,7 +945,7 @@ export default function FinanzasHeidy() {
                   RD${money(
                     filteredExpenses
                       .filter((item) => item.paid)
-                      .reduce((acc, item) => acc + Number(item.amount || 0), 0)
+                      .reduce((acc, item) => acc + Number(String(item.amount || 0)), 0)
                   )}
                 </h2>
 
@@ -1032,10 +1031,10 @@ export default function FinanzasHeidy() {
                       className="absolute inset-0 rounded-full"
                       style={{
                         background: `conic-gradient(
-                          #22d3ee 0% ${(expenseCategoryData['🍔 Comida'] / Math.max(Number(totalCategoryExpenses || 1), 1)) * 100}%,
-                          #f59e0b ${(expenseCategoryData['🍔 Comida'] / Math.max(Number(totalCategoryExpenses || 1), 1)) * 100}% ${((expenseCategoryData['🍔 Comida'] + expenseCategoryData['🚗 Transporte']) / Math.max(Number(totalCategoryExpenses || 1), 1)) * 100}%,
-                          #ef4444 ${((expenseCategoryData['🍔 Comida'] + expenseCategoryData['🚗 Transporte']) / Math.max(Number(totalCategoryExpenses || 1), 1)) * 100}% ${((expenseCategoryData['🍔 Comida'] + expenseCategoryData['🚗 Transporte'] + expenseCategoryData['💳 Préstamo']) / Math.max(Number(totalCategoryExpenses || 1), 1)) * 100}%,
-                          #a855f7 ${((expenseCategoryData['🍔 Comida'] + expenseCategoryData['🚗 Transporte'] + expenseCategoryData['💳 Préstamo']) / Math.max(Number(totalCategoryExpenses || 1), 1)) * 100}% 100%
+                          #22d3ee 0% ${(expenseCategoryData['🍔 Comida'] / Math.max(Number(String(totalCategoryExpenses || 1)), 1)) * 100}%,
+                          #f59e0b ${(expenseCategoryData['🍔 Comida'] / Math.max(Number(String(totalCategoryExpenses || 1)), 1)) * 100}% ${((expenseCategoryData['🍔 Comida'] + expenseCategoryData['🚗 Transporte']) / Math.max(Number(String(totalCategoryExpenses || 1)), 1)) * 100}%,
+                          #ef4444 ${((expenseCategoryData['🍔 Comida'] + expenseCategoryData['🚗 Transporte']) / Math.max(Number(String(totalCategoryExpenses || 1)), 1)) * 100}% ${((expenseCategoryData['🍔 Comida'] + expenseCategoryData['🚗 Transporte'] + expenseCategoryData['💳 Préstamo']) / Math.max(Number(String(totalCategoryExpenses || 1)), 1)) * 100}%,
+                          #a855f7 ${((expenseCategoryData['🍔 Comida'] + expenseCategoryData['🚗 Transporte'] + expenseCategoryData['💳 Préstamo']) / Math.max(Number(String(totalCategoryExpenses || 1)), 1)) * 100}% 100%
                         )`,
                       }}
                     />
@@ -1126,7 +1125,7 @@ export default function FinanzasHeidy() {
                         style={{
                           width: `${Math.min(
                             100,
-                            (monthlyExpenses / Math.max(Number(String(monthlyIncome ?? 1)), 1)) * 100
+                            (monthlyExpenses / Math.max(Number(String(String(monthlyIncome ?? 1))), 1)) * 100
                           )}%`,
                         }}
                       />
@@ -1150,7 +1149,7 @@ export default function FinanzasHeidy() {
                         style={{
                           width: `${Math.min(
                             100,
-                            (totalSavings / Math.max(Number(String(monthlyIncome ?? 1)), 1)) * 100
+                            (totalSavings / Math.max(Number(String(String(monthlyIncome ?? 1))), 1)) * 100
                           )}%`,
                         }}
                       />
@@ -1195,7 +1194,7 @@ export default function FinanzasHeidy() {
                           width: `${Math.min(
                             100,
                             (myAvailable /
-                              Math.max(Number(myAvailable || 0), Number(partnerAvailable || 0), 1)) *
+                              Math.max(Number(String(myAvailable || 0)), Number(String(partnerAvailable || 0)), 1)) *
                               100
                           )}%`,
                         }}
@@ -1218,7 +1217,7 @@ export default function FinanzasHeidy() {
                           width: `${Math.min(
                             100,
                             (partnerAvailable /
-                              Math.max(Number(myAvailable || 0), Number(partnerAvailable || 0), 1)) *
+                              Math.max(Number(String(myAvailable || 0)), Number(String(partnerAvailable || 0)), 1)) *
                               100
                           )}%`,
                         }}
@@ -1430,8 +1429,8 @@ export default function FinanzasHeidy() {
                           <p className="text-white/40 text-xs uppercase">Ingreso total</p>
                           <h4 className="text-sm font-black mt-1">
                             RD${money(
-                              Number(String(account.payrollOne ?? 0)) +
-                              Number(String(account.payrollTwo ?? 0))
+                              Number(String(String(account.payrollOne ?? 0))) +
+                              Number(String(String(account.payrollTwo ?? 0)))
                             )}
                           </h4>
                         </div>
@@ -1463,14 +1462,14 @@ export default function FinanzasHeidy() {
                             <div className="rounded-[16px] bg-white/[0.04] p-3 min-h-[82px] flex flex-col justify-between">
                               <p className="text-white/40 text-xs uppercase">1ra Quincena</p>
                               <h4 className="text-sm font-black mt-1">
-                                RD${money(account.payrollOne ?? 0)}
+                                RD${money(account.payrollOne)}
                               </h4>
                             </div>
 
                             <div className="rounded-[16px] bg-white/[0.04] p-3 min-h-[82px] flex flex-col justify-between">
                               <p className="text-white/40 text-xs uppercase">2da Quincena</p>
                               <h4 className="text-sm font-black mt-1">
-                                RD${money(account.payrollTwo ?? 0)}
+                                RD${money(account.payrollTwo)}
                               </h4>
                             </div>
                           </div>
@@ -1501,7 +1500,7 @@ export default function FinanzasHeidy() {
 
                                 <div className="text-right">
                                   <h4 className="text-red-300 font-black">
-                                   RD${money(account.autoDebitAmount ?? 0)}
+                                    RD${money(account.autoDebitAmount)}
                                   </h4>
                                   <p className="text-xs text-white/50 mt-1">
                                     Día {account.autoDebitDay || '-'}
@@ -1538,7 +1537,7 @@ export default function FinanzasHeidy() {
                                 width: `${Math.min(
                                   100,
                                   ((account.debt || 0) /
-                                    Math.max(Number(String(account.limit ?? 1)), 1)) *
+                                    Math.max(Number(String(String(account.limit ?? 1))), 1)) *
                                     100
                                 )}%`,
                               }}
@@ -1553,7 +1552,7 @@ export default function FinanzasHeidy() {
                             <span>
                               {Math.round(
                                 ((account.debt || 0) /
-                                  Math.max(Number(String(account.limit ?? 1)), 1)) *
+                                  Math.max(Number(String(String(account.limit ?? 1))), 1)) *
                                   100
                               )}%
                             </span>
@@ -2168,7 +2167,7 @@ export default function FinanzasHeidy() {
                     ? Math.min((goal.saved / goal.target) * 100, 100)
                     : 0
 
-                  const remaining = Number(goal.target || 0) - Number(goal.saved || 0)
+                  const remaining = Number(String(goal.target || 0)) - Number(String(goal.saved || 0))
 
                   const today = new Date()
                   const targetDate = goal.date ? new Date(goal.date) : null
