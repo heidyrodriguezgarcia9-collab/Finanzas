@@ -1125,7 +1125,7 @@ export default function FinanzasHeidy() {
                         style={{
                           width: `${Math.min(
                             100,
-                            (monthlyExpenses / Math.max(Number(monthlyIncome || 1), 1)) * 100
+                            (monthlyExpenses / Math.max(Number(monthlyIncome ?? 1), 1)) * 100
                           )}%`,
                         }}
                       />
@@ -1149,7 +1149,7 @@ export default function FinanzasHeidy() {
                         style={{
                           width: `${Math.min(
                             100,
-                            (totalSavings / Math.max(Number(monthlyIncome || 1), 1)) * 100
+                            (totalSavings / Math.max(Number(monthlyIncome ?? 1), 1)) * 100
                           )}%`,
                         }}
                       />
@@ -1429,8 +1429,8 @@ export default function FinanzasHeidy() {
                           <p className="text-white/40 text-xs uppercase">Ingreso total</p>
                           <h4 className="text-sm font-black mt-1">
                             RD${money(
-                              Number(account.payrollOne || 0) +
-                              Number(account.payrollTwo || 0)
+                              Number(account.payrollOne ?? 0) +
+                              Number(account.payrollTwo ?? 0)
                             )}
                           </h4>
                         </div>
@@ -1537,7 +1537,7 @@ export default function FinanzasHeidy() {
                                 width: `${Math.min(
                                   100,
                                   ((account.debt || 0) /
-                                    Math.max(Number(account.limit || 1), 1)) *
+                                    Math.max(Number(account.limit ?? 1), 1)) *
                                     100
                                 )}%`,
                               }}
@@ -1552,7 +1552,7 @@ export default function FinanzasHeidy() {
                             <span>
                               {Math.round(
                                 ((account.debt || 0) /
-                                  Math.max(Number(account.limit || 1), 1)) *
+                                  Math.max(Number(account.limit ?? 1), 1)) *
                                   100
                               )}%
                             </span>
