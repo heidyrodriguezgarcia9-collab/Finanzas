@@ -2165,151 +2165,157 @@ export default function FinanzasHeidy() {
                 ))}
               </div>
 
-              <div className="space-y-3 sm:space-y-4">
+              <div className="space-y-5">
                 {filteredExpenses.length === 0 && (
                   <div className="rounded-[24px] bg-white/[0.03] border border-white/10 h-[180px] flex items-center justify-center text-white/50 text-lg">
                     Sin gastos este mes
                   </div>
                 )}
 
-                {filteredExpenses.map((expense) => (
-                  <div
-                    key={expense.id}
-                    className="rounded-[24px] bg-gradient-to-br from-[#0f172d] to-[#0b1020] border border-white/10 p-4"
+                {Object.entries(
+                  filteredExpenses.reduce((acc: any, expense) => {
+                    const category = expense.category || '📦 Otro'
+
+                    if (!acc[category]) {
+                      acc[category] = []
+                    }
+
+                    acc[category].push(expense)
+
+                    return acc
+                  }, {})
+                ).map(([category, categoryExpenses]: any) => (
+                  <details
+                    key={category}
+                    open
+                    className="rounded-[24px] bg-white/[0.03] border border-white/10 overflow-hidden"
                   >
-                    <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-                      <div className="flex items-start gap-4">
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-cyan-500/10 flex items-center justify-center text-2xl shrink-0">
-                          {(expense.category || '💸').split(' ')[0]}
-                        </div>
+                    <summary className="cursor-pointer list-none px-5 py-4 flex items-center justify-between gap-4">
+                      <div>
+                        <h3 className="font-black text-lg sm:text-2xl">
+                          {category}
+                        </h3>
 
-                        <div>
-                          <div className="flex items-center gap-2 flex-wrap mb-2">
-                            <span className="px-2 py-1 rounded-full bg-cyan-500/10 text-cyan-300 text-xs font-bold">
-                              {expense.owner}
-                            </span>
+                        <p className="text-white/40 text-xs sm:text-sm mt-1">
+                          {categoryExpenses.length} gasto(s)
+                        </p>
+                      </div>
 
-                            <span className="px-2 py-1 rounded-full bg-white/10 text-white/70 text-xs font-bold flex items-center gap-1">
-                              <span>{expense.frequency === 'Fijo' ? '📌' : '💸'}</span>
-                              <span>{expense.frequency}</span>
-                            </span>
+                      <h3 className="text-cyan-300 font-black text-lg sm:text-2xl">
+                        RD${money(
+                          categoryExpenses.reduce(
+                            (acc: number, item: any) =>
+                              acc + Number(item.amount || 0),
+                            0
+                          )
+                        )}
+                      </h3>
+                    </summary>
 
-                            <span className={`px-2 py-1 rounded-full text-xs font-bold ${expense.paid ? 'bg-emerald-500/10 text-emerald-300' : 'bg-yellow-500/10 text-yellow-300'}`}>
-                              {expense.paid ? 'Pagado' : 'Pendiente'}
-                            </span>
+                    <div className="space-y-3 p-4">
+                      {categoryExpenses.map((expense: any) => (
+                        <div
+                          key={expense.id}
+                          className="rounded-[24px] bg-gradient-to-br from-[#0f172d] to-[#0b1020] border border-white/10 p-4"
+                        >
+                          <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+                            <div className="flex items-start gap-4">
+                              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-cyan-500/10 flex items-center justify-center text-2xl shrink-0">
+                                {(expense.category || '💸').split(' ')[0]}
+                              </div>
+
+                              <div>
+                                <div className="flex items-center gap-2 flex-wrap mb-2">
+                                  <span className="px-2 py-1 rounded-full bg-cyan-500/10 text-cyan-300 text-xs font-bold">
+                                    {expense.owner}
+                                  </span>
+
+                                  <span className="px-2 py-1 rounded-full bg-white/10 text-white/70 text-xs font-bold flex items-center gap-1">
+                                    <span>{expense.frequency === 'Fijo' ? '📌' : '💸'}</span>
+                                    <span>{expense.frequency}</span>
+                                  </span>
+
+                                  <span className={`px-2 py-1 rounded-full text-xs font-bold ${expense.paid ? 'bg-emerald-500/10 text-emerald-300' : 'bg-yellow-500/10 text-yellow-300'}`}>
+                                    {expense.paid ? 'Pagado' : 'Pendiente'}
+                                  </span>
+                                </div>
+
+                                <h3 className="text-base sm:text-xl font-black">
+                                  {expense.name}
+                                </h3>
+
+                                {expense.account && (
+                                  <p className="text-cyan-300 text-xs mt-1 font-semibold">
+                                    💳 {expense.account}
+                                  </p>
+                                )}
+
+                                <p className="text-white/40 text-sm mt-1">
+                                  {expense.frequency === 'Fijo'
+                                    ? `Día ${expense.date}`
+                                    : expense.date}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="flex flex-col items-end gap-3">
+                              <h2 className={`text-lg sm:text-2xl font-black ${expense.paid ? 'text-emerald-300' : 'text-red-300'}`}>
+                                RD${money(expense.amount)}
+                              </h2>
+
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => {
+                                    const nextPaid = !expense.paid
+
+                                    setExpenses((prev) =>
+                                      prev.map((item) =>
+                                        item.id === expense.id
+                                          ? { ...item, paid: nextPaid }
+                                          : item
+                                      )
+                                    )
+                                  }}
+                                  className={`px-3 py-2 rounded-xl text-xs font-bold ${expense.paid ? 'bg-emerald-500/20 text-emerald-300' : 'bg-yellow-500/20 text-yellow-300'}`}
+                                >
+                                  {expense.paid ? 'Pagado' : 'Marcar'}
+                                </button>
+
+                                <button
+                                  onClick={() => {
+                                    setEditingExpenseId(expense.id)
+                                    setExpenseName(expense.name)
+                                    setExpenseAmount(String(expense.amount || ''))
+                                    setExpenseFrequency(expense.frequency)
+                                    setExpenseOwner(expense.owner)
+                                    setExpenseDate(expense.date)
+                                    setExpenseCategory(expense.category)
+                                    setExpenseAccount(expense.account || '')
+                                    setExpensePaid(expense.paid)
+                                    setShowExpenseModal(true)
+                                  }}
+                                  className="w-9 h-9 rounded-[14px] bg-cyan-500/10 text-sm"
+                                >
+                                  ✏️
+                                </button>
+
+                                <button
+                                  onClick={() =>
+                                    setExpenses((prev) =>
+                                      prev.filter((item) => item.id !== expense.id)
+                                    )
+                                  }
+                                  className="w-9 h-9 rounded-[14px] bg-red-500/10 text-sm"
+                                >
+                                  🗑️
+                                </button>
+                              </div>
+                            </div>
                           </div>
-
-                          <h3 className="text-base sm:text-xl font-black">
-                            {expense.name}
-                          </h3>
-
-                          {expense.account && (
-                            <p className="text-cyan-300 text-xs mt-1 font-semibold">
-                              💳 {expense.account}
-                            </p>
-                          )}
-
-                          <p className="text-white/40 text-sm mt-1">
-                            {expense.frequency === 'Fijo'
-                              ? `Día ${expense.date}`
-                              : expense.date}
-                          </p>
                         </div>
-                      </div>
-
-                      <div className="flex flex-col items-end gap-3">
-                        <h2 className={`text-lg sm:text-2xl font-black ${expense.paid ? 'text-emerald-300' : 'text-red-300'}`}>
-                          RD${money(expense.amount)}
-                        </h2>
-
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => {
-                              const nextPaid = !expense.paid
-
-                              setExpenses((prev) =>
-                                prev.map((item) =>
-                                  item.id === expense.id
-                                    ? { ...item, paid: nextPaid }
-                                    : item
-                                )
-                              )
-
-                              const relatedCard = accounts.find(
-                                (acc) => acc.id === expense.cardId
-                              )
-
-                              if (relatedCard) {
-                                setAccounts((prev) =>
-                                  prev.map((account) => {
-                                    if (account.id === relatedCard.id) {
-                                      const amount = Number(String(expense.amount || 0))
-
-                                      if (nextPaid) {
-                                        return {
-                                          ...account,
-                                          debt: Math.max(
-                                            0,
-                                            Number(String(account.debt || 0)) - amount
-                                          ),
-                                          availableCredit:
-                                            Number(String(account.availableCredit || 0)) + amount,
-                                        }
-                                      }
-
-                                      return {
-                                        ...account,
-                                        debt:
-                                          Number(String(account.debt || 0)) + amount,
-                                        availableCredit: Math.max(
-                                          0,
-                                          Number(String(account.availableCredit || 0)) - amount
-                                        ),
-                                      }
-                                    }
-
-                                    return account
-                                  })
-                                )
-                              }
-                            }}
-                            className={`px-3 py-2 rounded-xl text-xs font-bold ${expense.paid ? 'bg-emerald-500/20 text-emerald-300' : 'bg-yellow-500/20 text-yellow-300'}`}
-                          >
-                            {expense.paid ? 'Pagado' : 'Marcar'}
-                          </button>
-
-                          <button
-                            onClick={() => {
-                              setEditingExpenseId(expense.id)
-                              setExpenseName(expense.name)
-                              setExpenseAmount(String(expense.amount || ''))
-                              setExpenseFrequency(expense.frequency)
-                              setExpenseOwner(expense.owner)
-                              setExpenseDate(expense.date)
-                              setExpenseCategory(expense.category)
-                              setExpenseAccount(expense.account || '')
-                              setExpensePaid(expense.paid)
-                              setShowExpenseModal(true)
-                            }}
-                            className="w-9 h-9 rounded-[14px] bg-cyan-500/10 text-sm"
-                          >
-                            ✏️
-                          </button>
-
-                          <button
-                            onClick={() =>
-                              setExpenses((prev) =>
-                                prev.filter((item) => item.id !== expense.id)
-                              )
-                            }
-                            className="w-9 h-9 rounded-[14px] bg-red-500/10 text-sm"
-                          >
-                            🗑️
-                          </button>
-                        </div>
-                      </div>
+                      ))}
                     </div>
-                  </div>
+                  </details>
                 ))}
               </div>
             </div>
