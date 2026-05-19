@@ -1487,7 +1487,7 @@ export default function FinanzasHeidy() {
                     .map((expense) => (
                       <div
                         key={expense.id}
-                        className="rounded-[22px] bg-gradient-to-r from-white/[0.04] to-white/[0.02] border border-white/10 p-4 flex items-center justify-between gap-4"
+                        className="rounded-[22px] bg-gradient-to-r from-white/[0.04] to-white/[0.02] border border-white/10 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 overflow-hidden"
                       >
                         <div className="flex items-center gap-4 min-w-0">
                           <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-cyan-500/10 flex items-center justify-center text-2xl shrink-0">
@@ -1515,8 +1515,8 @@ export default function FinanzasHeidy() {
                           </div>
                         </div>
 
-                        <div className="text-left sm:text-right shrink-0 w-full sm:w-auto">
-                          <h2 className={`text-lg sm:text-2xl font-black ${expense.paid ? 'text-emerald-300' : 'text-red-300'}`}>
+                        <div className="text-left sm:text-right w-full sm:w-auto break-words">
+                          <h2 className={`text-lg sm:text-2xl font-black break-all leading-tight ${expense.paid ? 'text-emerald-300' : 'text-red-300'}`}>
                             {expense.paid ? '-' : ''}RD${money(expense.amount)}
                           </h2>
 
