@@ -1462,14 +1462,14 @@ export default function FinanzasHeidy() {
                             <div className="rounded-[16px] bg-white/[0.04] p-3 min-h-[82px] flex flex-col justify-between">
                               <p className="text-white/40 text-xs uppercase">1ra Quincena</p>
                               <h4 className="text-sm font-black mt-1">
-                                RD${money(account.payrollOne)}
+                                RD${money(account.payrollOne ?? 0)}
                               </h4>
                             </div>
 
                             <div className="rounded-[16px] bg-white/[0.04] p-3 min-h-[82px] flex flex-col justify-between">
                               <p className="text-white/40 text-xs uppercase">2da Quincena</p>
                               <h4 className="text-sm font-black mt-1">
-                                RD${money(account.payrollTwo)}
+                                RD${money(account.payrollTwo ?? 0)}
                               </h4>
                             </div>
                           </div>
@@ -1500,7 +1500,7 @@ export default function FinanzasHeidy() {
 
                                 <div className="text-right">
                                   <h4 className="text-red-300 font-black">
-                                    RD${money(account.autoDebitAmount)}
+                                   RD${money(account.autoDebitAmount ?? 0)}
                                   </h4>
                                   <p className="text-xs text-white/50 mt-1">
                                     Día {account.autoDebitDay || '-'}
