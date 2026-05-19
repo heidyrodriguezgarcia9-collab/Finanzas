@@ -4,23 +4,23 @@ interface Account {
   bank: string
   type: string
   owner: string
-  balance?: number
-  payroll?: number
-  payrollOne?: string
-  payrollTwo?: string
-  limit?: number
-  availableCredit?: number
-  debt?: number
-  debtAccount?: string
-  firstPayDay?: string
-  secondPayDay?: string
-  autoDebitName?: string
-  autoDebitAmount?: number
-  autoDebitDay?: string
-  cutDay?: string
-  paymentDay?: string
-  color?: string
-  linkedGoal?: string
+  balance: number       
+  payroll: number        
+  payrollOne: string    
+  payrollTwo: string   
+  limit: number          
+  availableCredit: number 
+  debt: number         
+  debtAccount: string    
+  firstPayDay: string    
+  secondPayDay: string   
+  autoDebitName: string  
+  autoDebitAmount: number 
+  autoDebitDay: string  
+  cutDay: string         
+  paymentDay: string     
+  color: string          
+  linkedGoal: string      
 }
 
 interface Goal {
