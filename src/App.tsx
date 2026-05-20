@@ -189,6 +189,7 @@ export default function FinanzasHeidy() {
   const [editingExpenseId, setEditingExpenseId] = useState<number | null>(null)
   const [expenseAccount, setExpenseAccount] = useState('')
   const [expenseFilter, setExpenseFilter] = useState('Todos')
+  const [summaryFilter, setSummaryFilter] = useState('Ambos')
   const [expenseErrors, setExpenseErrors] = useState<any>({})
 
   useEffect(() => {
@@ -358,6 +359,14 @@ export default function FinanzasHeidy() {
       })
   }, [expenses, selectedMonth, expenseFilter])
 
+  const summaryFilteredExpenses = useMemo(() => {
+    return filteredExpenses
+      .filter((expense) => {
+      if (summaryFilter === 'Ambos') return true
+      return expense.owner === summaryFilter
+    })
+  }, [filteredExpenses, summaryFilter])
+
   const monthLabel = useMemo(() => {
     const parts = String(selectedMonth || '0-0').split('-')
     const year = parts[0] || '0'
@@ -390,8 +399,8 @@ export default function FinanzasHeidy() {
               ? Number(item.autoDebitAmount || 0)
               : 0
           ) -
-          filteredExpenses
-            .filter(
+          summaryFilteredExpenses
+      .filter(
               (expense) =>
                 expense.paid &&
                 (
@@ -427,8 +436,8 @@ export default function FinanzasHeidy() {
               ? Number(item.autoDebitAmount || 0)
               : 0
           ) -
-          filteredExpenses
-            .filter(
+          summaryFilteredExpenses
+      .filter(
               (expense) =>
                 expense.paid &&
                 expense.account === `${item.bank} - ${item.type}`
@@ -444,11 +453,32 @@ export default function FinanzasHeidy() {
   }, [accounts, filteredExpenses])
 
   const totalSavings = useMemo(() => {
-    return goals.reduce((acc, item) => {
-      return acc + Number(String(item.saved || 0))
-    }, 0)
-  }, [goals])
+    return goals
+      .filter((goal) => {
+        if (summaryFilter === 'Ambos') return true
 
+        const linkedAccount = accounts.find(
+          (acc) => `${acc.bank} - ${acc.type}` === goal.location
+        )
+
+        if (!linkedAccount) return true
+
+        return linkedAccount.owner === summaryFilter
+      })
+      .reduce((acc, item) => {
+        return acc + Number(String(item.saved || 0))
+      }, 0)
+  }, [goals, summaryFilter, accounts])
+
+  const summaryFilteredAccounts = useMemo(() => {
+    return accounts.filter((account) => {
+      if (summaryFilter === 'Ambos') return true
+      if (summaryFilter === 'Yo') {
+        return account.owner === 'Yo' || account.owner === 'Compartida'
+      }
+      return account.owner === 'Pareja' || account.owner === 'Compartida'
+    })
+  }, [accounts, summaryFilter])
   const expenseCategoryData = useMemo(() => {
     const categories = {
       '🍔 Comida': 0,
@@ -457,7 +487,7 @@ export default function FinanzasHeidy() {
       '🎉 Ocio': 0,
     }
 
-    filteredExpenses
+    summaryFilteredExpenses
       .filter((expense) => expense.paid)
       .forEach((expense) => {
         if (expense.category in categories) {
@@ -466,7 +496,7 @@ export default function FinanzasHeidy() {
       })
 
     return categories
-  }, [filteredExpenses])
+  }, [summaryFilteredExpenses])
 
   const totalCategoryExpenses = Object.values(expenseCategoryData).reduce(
     (acc, value) => acc + value,
@@ -474,7 +504,7 @@ export default function FinanzasHeidy() {
   )
 
   const monthlyIncome = useMemo(() => {
-    return accounts
+    return summaryFilteredAccounts
       .filter((acc) => acc.type === 'Nómina')
       .reduce(
         (acc, item) =>
@@ -483,10 +513,10 @@ export default function FinanzasHeidy() {
           Number(String(String(item.payrollTwo ?? 0))),
         0
       )
-  }, [accounts])
+  }, [summaryFilteredAccounts])
 
   const monthlyExpenses = useMemo(() => {
-    return filteredExpenses
+    return summaryFilteredExpenses
       .filter((expense) => expense.paid)
       .reduce((acc, item) => acc + Number(String(item.amount || 0)), 0)
   }, [filteredExpenses])
@@ -518,13 +548,13 @@ export default function FinanzasHeidy() {
   }, [accounts])
 
   const myPendingExpenses = useMemo(() => {
-    return filteredExpenses
+    return summaryFilteredExpenses
       .filter((expense) => !expense.paid && expense.owner === 'Yo')
       .reduce((acc, item) => acc + Number(String(item.amount || 0)), 0)
   }, [filteredExpenses])
 
   const partnerPendingExpenses = useMemo(() => {
-    return filteredExpenses
+    return summaryFilteredExpenses
       .filter((expense) => !expense.paid && expense.owner === 'Pareja')
       .reduce((acc, item) => acc + Number(String(item.amount || 0)), 0)
   }, [filteredExpenses])
@@ -580,6 +610,34 @@ export default function FinanzasHeidy() {
 
     return partnerIncome - partnerTotalExpenses - partnerAutoDebits
   }, [expenses, partnerIncome, selectedMonth, accounts])
+
+  const effectiveMyCashFlow =
+    summaryFilter === 'Pareja'
+      ? partnerProjectedCashFlow
+      : summaryFilter === 'Ambos'
+        ? myProjectedCashFlow + partnerProjectedCashFlow
+        : myProjectedCashFlow
+
+  const effectiveMyPending =
+    summaryFilter === 'Pareja'
+      ? partnerPendingExpenses
+      : summaryFilter === 'Ambos'
+        ? myPendingExpenses + partnerPendingExpenses
+        : myPendingExpenses
+
+  const effectivePartnerCashFlow =
+    summaryFilter === 'Yo'
+      ? myProjectedCashFlow
+      : summaryFilter === 'Ambos'
+        ? myProjectedCashFlow + partnerProjectedCashFlow
+        : partnerProjectedCashFlow
+
+  const effectivePartnerPending =
+    summaryFilter === 'Yo'
+      ? myPendingExpenses
+      : summaryFilter === 'Ambos'
+        ? myPendingExpenses + partnerPendingExpenses
+        : partnerPendingExpenses
 
   
 
@@ -1108,6 +1166,23 @@ export default function FinanzasHeidy() {
             />
           </div>
         </div>
+        {activeTab === 'Resumen' && (
+          <div className="flex gap-2 flex-wrap mb-4">
+            {['Ambos', 'Yo', 'Pareja'].map((filter) => (
+              <button
+                key={filter}
+                onClick={() => setSummaryFilter(filter)}
+                className={`px-4 py-2 rounded-full text-sm border transition-all font-bold ${summaryFilter === filter ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300' : 'bg-white/[0.05] border-white/10 text-white/70 hover:bg-cyan-500/20'}`}
+              >
+                {filter === 'Ambos'
+                  ? '👥 Ambos'
+                  : filter === 'Yo'
+                  ? '🙋 Yo'
+                  : '💕 Pareja'}
+              </button>
+            ))}
+          </div>
+        )}
 
         <div className="mb-6 rounded-[24px] bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/10 px-5 py-4 flex items-center justify-between flex-wrap gap-3">
           <div>
@@ -1115,32 +1190,134 @@ export default function FinanzasHeidy() {
               Periodo activo
             </p>
 
-            <h2 className="text-xl sm:text-lg sm:text-2xl font-black capitalize mt-1 text-cyan-200">
+            <h2 className="text-xl sm:text-base sm:text-2xl font-black capitalize mt-1 text-cyan-200">
               {monthLabel}
             </h2>
           </div>
 
           <div className="flex gap-3 flex-wrap">
             <div className="px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm bg-emerald-500/10 text-emerald-300 text-sm font-bold">
-              {filteredExpenses.filter((e) => e.paid).length} pagos realizados
+              {summaryFilteredExpenses.filter((e) => e.paid).length} pagos realizados
             </div>
 
             <div className="px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm bg-yellow-500/10 text-yellow-300 text-sm font-bold">
-              {filteredExpenses.filter((e) => !e.paid).length} pendientes
+              {summaryFilteredExpenses.filter((e) => !e.paid).length} pendientes
             </div>
           </div>
         </div>
 
         {activeTab === 'Resumen' && (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
-              <div className="rounded-[28px] bg-white/5 border border-white/10 p-6">
-                <p className="text-white/50 uppercase text-xs tracking-[0.2em]">
-                  Mi disponible
+            <div className="grid grid-cols-2 xl:grid-cols-5 gap-4 mb-5">
+              <div className="rounded-[24px] bg-gradient-to-br from-red-500/15 to-orange-500/10 border border-red-500/20 p-4 relative overflow-hidden">
+                <div className="absolute -top-8 -right-8 w-24 h-24 rounded-full bg-red-500/10 blur-3xl" />
+
+                <p className="text-red-200/70 uppercase text-[10px] sm:text-xs tracking-[0.2em] relative z-10">
+                  💳 Deuda tarjetas
                 </p>
 
-                <h2 className="text-2xl sm:text-4xl font-black text-cyan-300 mt-3 break-all leading-tight">
-                  RD${money(myAvailable)}
+                <h2 className="text-xl sm:text-3xl font-black mt-3 text-red-300 relative z-10 break-all">
+                  RD${money(
+                    summaryFilteredExpenses
+                      .filter((expense) =>
+                        expense.linkedCardId && !expense.paid
+                      )
+                      .reduce(
+                        (acc, expense) =>
+                          acc + Number(expense.amount || 0),
+                        0
+                      )
+                  )}
+                </h2>
+              </div>
+
+              <div className="rounded-[24px] bg-gradient-to-br from-yellow-500/15 to-amber-500/10 border border-yellow-500/20 p-4 relative overflow-hidden">
+                <div className="absolute -top-8 -right-8 w-24 h-24 rounded-full bg-yellow-500/10 blur-3xl" />
+
+                <p className="text-yellow-200/70 uppercase text-[10px] sm:text-xs tracking-[0.2em] relative z-10">
+                  🧾 Pendientes
+                </p>
+
+                <h2 className="text-xl sm:text-3xl font-black mt-3 text-yellow-300 relative z-10 break-all">
+                  RD${money(
+                    summaryFilteredExpenses
+                      .filter((expense) => !expense.paid)
+                      .reduce(
+                        (acc, expense) =>
+                          acc + Number(expense.amount || 0),
+                        0
+                      )
+                  )}
+                </h2>
+              </div>
+
+              <div className="rounded-[24px] bg-gradient-to-br from-cyan-500/15 to-blue-500/10 border border-cyan-500/20 p-4 relative overflow-hidden">
+                <div className="absolute -top-8 -right-8 w-24 h-24 rounded-full bg-cyan-500/10 blur-3xl" />
+
+                <p className="text-cyan-200/70 uppercase text-[10px] sm:text-xs tracking-[0.2em] relative z-10">
+                  🔥 Gastos mes
+                </p>
+
+                <h2 className="text-xl sm:text-3xl font-black mt-3 text-cyan-300 relative z-10 break-all">
+                  RD${money(
+                    summaryFilter === 'Yo'
+                      ? summaryFilteredExpenses
+                          .filter((expense) => expense.paid)
+                          .reduce((acc, item) => acc + Number(item.amount || 0), 0)
+                      : summaryFilter === 'Pareja'
+                      ? summaryFilteredExpenses
+                          .filter((expense) => expense.paid)
+                          .reduce((acc, item) => acc + Number(item.amount || 0), 0)
+                      : monthlyExpenses
+                  )}
+                </h2>
+              </div>
+
+              <div className="rounded-[24px] bg-gradient-to-br from-emerald-500/15 to-green-500/10 border border-emerald-500/20 p-4 relative overflow-hidden">
+                <div className="absolute -top-8 -right-8 w-24 h-24 rounded-full bg-emerald-500/10 blur-3xl" />
+
+                <p className="text-emerald-200/70 uppercase text-[10px] sm:text-xs tracking-[0.2em] relative z-10">
+                  🎯 Ahorro mensual
+                </p>
+
+                <h2 className="text-xl sm:text-3xl font-black mt-3 text-emerald-300 relative z-10 break-all">
+                  RD${money(
+                    goals.reduce(
+                      (acc, goal) =>
+                        acc + Number(goal.monthly || 0),
+                      0
+                    )
+                  )}
+                </h2>
+              </div>
+
+              <div className="rounded-[24px] bg-gradient-to-br from-violet-500/15 to-fuchsia-500/10 border border-violet-500/20 p-4 relative overflow-hidden col-span-2 xl:col-span-1">
+                <div className="absolute -top-8 -right-8 w-24 h-24 rounded-full bg-violet-500/10 blur-3xl" />
+
+                <p className="text-violet-200/70 uppercase text-[10px] sm:text-xs tracking-[0.2em] relative z-10">
+                  ⚠️ Próximos pagos
+                </p>
+
+                <h2 className="text-xl sm:text-3xl font-black mt-3 text-violet-300 relative z-10 break-all">
+                  {
+                    summaryFilteredExpenses.filter((expense) => !expense.paid).length
+                  }
+                </h2>
+
+                <p className="text-white/40 text-xs mt-2 relative z-10">
+                  pagos pendientes
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
+              <div className="rounded-[22px] bg-white/5 border border-white/10 p-4 sm:p-6">
+                <p className="text-white/50 uppercase text-xs tracking-[0.2em]">
+                  {summaryFilter === 'Ambos' ? 'Disponible total' : summaryFilter === 'Pareja' ? 'Disponible pareja' : 'Mi disponible'}
+                </p>
+
+                <h2 className="text-xl sm:text-4xl font-black text-cyan-300 mt-3 break-all leading-tight">
+                  RD${money(summaryFilter === 'Pareja' ? partnerAvailable : summaryFilter === 'Ambos' ? myAvailable + partnerAvailable : myAvailable)}
                 </h2>
 
                 <p className="text-white/40 mt-1 text-xs sm:text-sm leading-relaxed">
@@ -1148,13 +1325,13 @@ export default function FinanzasHeidy() {
                 </p>
               </div>
 
-              <div className="rounded-[28px] bg-white/5 border border-white/10 p-6">
+              <div className="rounded-[22px] bg-white/5 border border-white/10 p-4 sm:p-6">
                 <p className="text-white/50 uppercase text-xs tracking-[0.2em]">
                   Pareja disponible
                 </p>
 
-                <h2 className="text-2xl sm:text-4xl font-black text-pink-300 mt-3 break-all leading-tight">
-                  RD${money(partnerAvailable)}
+                <h2 className="text-xl sm:text-4xl font-black text-pink-300 mt-3 break-all leading-tight">
+                  RD${money(summaryFilter === 'Yo' ? myAvailable : partnerAvailable)}
                 </h2>
 
                 <p className="text-white/40 mt-1 text-xs sm:text-sm leading-relaxed">
@@ -1162,12 +1339,12 @@ export default function FinanzasHeidy() {
                 </p>
               </div>
 
-              <div className="rounded-[28px] bg-white/5 border border-white/10 p-6">
-                <p className="text-white/50 uppercase text-xs tracking-[0.2em]">
+              <div className="rounded-[20px] bg-white/5 border border-white/10 p-3 sm:p-5">
+                <p className="text-white/50 uppercase text-[10px] tracking-[0.15em]">
                   Ahorros
                 </p>
 
-                <h2 className="text-2xl sm:text-4xl font-black text-emerald-300 mt-3 break-all leading-tight">
+                <h2 className="text-lg sm:text-4xl font-black text-emerald-300 mt-3 break-all leading-tight">
                   RD${money(totalSavings)}
                 </h2>
 
@@ -1176,14 +1353,14 @@ export default function FinanzasHeidy() {
                 </p>
               </div>
 
-              <div className="rounded-[28px] bg-white/5 border border-white/10 p-6">
-                <p className="text-white/50 uppercase text-xs tracking-[0.2em]">
+              <div className="rounded-[20px] bg-white/5 border border-white/10 p-3 sm:p-5">
+                <p className="text-white/50 uppercase text-[10px] tracking-[0.15em]">
                   Gastos pagados
                 </p>
 
-                <h2 className="text-2xl sm:text-4xl font-black text-orange-300 mt-3 break-all leading-tight">
+                <h2 className="text-lg sm:text-4xl font-black text-orange-300 mt-3 break-all leading-tight">
                   RD${money(
-                    filteredExpenses
+                    summaryFilteredExpenses
                       .filter((item) => item.paid)
                       .reduce((acc, item) => acc + Number(String(item.amount || 0)), 0)
                   )}
@@ -1194,21 +1371,21 @@ export default function FinanzasHeidy() {
                 </p>
               </div>
 
-              <div className="rounded-[28px] bg-gradient-to-br from-cyan-500/15 to-blue-500/10 border border-cyan-500/20 p-6 relative overflow-hidden">
+              <div className="rounded-[28px] bg-gradient-to-br from-cyan-500/15 to-blue-500/10 border border-cyan-500/20 p-5 sm:p-6 relative overflow-hidden col-span-2 lg:col-span-1">
                 <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-cyan-500/10 blur-3xl" />
 
                 <p className="text-cyan-200/70 uppercase text-xs tracking-[0.2em] relative z-10">
-                  Cash flow proyectado · Yo
+                  Cash flow proyectado
                 </p>
 
-                <h2 className={`text-4xl font-black mt-3 relative z-10 ${myProjectedCashFlow >= 0 ? 'text-cyan-200' : 'text-red-300'}`}>
-                  RD${money(myProjectedCashFlow)}
+                <h2 className={`text-3xl sm:text-4xl font-black mt-3 relative z-10 ${myProjectedCashFlow >= 0 ? 'text-cyan-200' : 'text-red-300'}`}>
+                  RD${money(effectiveMyCashFlow)}
                 </h2>
 
                 <p className="text-white/50 mt-2 text-sm relative z-10 leading-relaxed">
                   Luego de tus pagos pendientes te quedarían{' '}
                   <span className="font-black text-cyan-200">
-                    RD${money(myProjectedCashFlow)}
+                    RD${money(effectiveMyCashFlow)}
                   </span>
                 </p>
 
@@ -1218,45 +1395,47 @@ export default function FinanzasHeidy() {
                   </p>
 
                   <h4 className="text-yellow-300 font-black text-lg mt-1">
-                    RD${money(myPendingExpenses)}
+                    RD${money(effectiveMyPending)}
                   </h4>
                 </div>
               </div>
 
-              <div className="rounded-[28px] bg-gradient-to-br from-pink-500/15 to-rose-500/10 border border-pink-500/20 p-6 relative overflow-hidden">
-                <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-pink-500/10 blur-3xl" />
+              {summaryFilter === 'Ambos' && (
+                <div className="rounded-[28px] bg-gradient-to-br from-pink-500/15 to-rose-500/10 border border-pink-500/20 p-6 relative overflow-hidden">
+                  <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-pink-500/10 blur-3xl" />
 
-                <p className="text-pink-200/70 uppercase text-xs tracking-[0.2em] relative z-10">
-                  Cash flow proyectado · Pareja
-                </p>
-
-                <h2 className={`text-4xl font-black mt-3 relative z-10 ${partnerProjectedCashFlow >= 0 ? 'text-pink-200' : 'text-red-300'}`}>
-                  RD${money(partnerProjectedCashFlow)}
-                </h2>
-
-                <p className="text-white/50 mt-2 text-sm relative z-10 leading-relaxed">
-                  Luego de pagos pendientes quedarían{' '}
-                  <span className="font-black text-pink-200">
-                    RD${money(partnerProjectedCashFlow)}
-                  </span>
-                </p>
-
-                <div className="mt-5 rounded-2xl bg-black/20 px-4 py-3 relative z-10">
-                  <p className="text-white/40 text-xs uppercase">
-                    Pendientes
+                  <p className="text-pink-200/70 uppercase text-xs tracking-[0.2em] relative z-10">
+                    Pendientes y proyección
                   </p>
 
-                  <h4 className="text-yellow-300 font-black text-lg mt-1">
-                    RD${money(partnerPendingExpenses)}
-                  </h4>
+                  <h2 className={`text-4xl font-black mt-3 relative z-10 ${partnerProjectedCashFlow >= 0 ? 'text-pink-200' : 'text-red-300'}`}>
+                    RD${money(effectivePartnerCashFlow)}
+                  </h2>
+
+                  <p className="text-white/50 mt-2 text-sm relative z-10 leading-relaxed">
+                    Luego de pagos pendientes quedarían{' '}
+                    <span className="font-black text-pink-200">
+                      RD${money(effectivePartnerCashFlow)}
+                    </span>
+                  </p>
+
+                  <div className="mt-5 rounded-2xl bg-black/20 px-4 py-3 relative z-10">
+                    <p className="text-white/40 text-xs uppercase">
+                      Pendientes
+                    </p>
+
+                    <h4 className="text-yellow-300 font-black text-lg mt-1">
+                      RD${money(effectivePartnerPending)}
+                    </h4>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mt-6">
-              <div className="rounded-[32px] bg-white/5 border border-white/10 p-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 mt-5">
+              <div className="rounded-[24px] bg-white/5 border border-white/10 p-4 sm:p-6">
                 <div className="flex items-center justify-between gap-3 mb-6">
-                  <h2 className="text-lg sm:text-2xl font-black">
+                  <h2 className="text-base sm:text-2xl font-black">
                     Gastos por categoría
                   </h2>
 
@@ -1315,9 +1494,9 @@ export default function FinanzasHeidy() {
                 </div>
               </div>
 
-              <div className="rounded-[32px] bg-white/5 border border-white/10 p-6">
+              <div className="rounded-[24px] bg-white/5 border border-white/10 p-4 sm:p-6">
                 <div className="flex items-center justify-between gap-3 mb-6">
-                  <h2 className="text-lg sm:text-2xl font-black">
+                  <h2 className="text-base sm:text-2xl font-black">
                     Ingresos vs gastos
                   </h2>
 
@@ -1334,7 +1513,7 @@ export default function FinanzasHeidy() {
                       </span>
 
                       <span className="text-emerald-300 font-black text-xl">
-                        RD${money(monthlyIncome)}
+                        RD${money(summaryFilter === 'Yo' ? myIncome : summaryFilter === 'Pareja' ? partnerIncome : monthlyIncome)}
                       </span>
                     </div>
 
@@ -1355,7 +1534,7 @@ export default function FinanzasHeidy() {
                       </span>
 
                       <span className="text-red-300 font-black text-xl">
-                        RD${money(monthlyExpenses)}
+                        RD${money(summaryFilteredExpenses.filter((expense) => expense.paid).reduce((acc, item) => acc + Number(item.amount || 0), 0))}
                       </span>
                     </div>
 
@@ -1400,14 +1579,14 @@ export default function FinanzasHeidy() {
 
               </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mt-6">
-              <div className="rounded-[32px] bg-white/5 border border-white/10 p-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 mt-5">
+              <div className="rounded-[24px] bg-white/5 border border-white/10 p-4 sm:p-6">
                 <div className="flex items-start sm:items-center justify-between gap-3 mb-5">
-                  <h2 className="text-lg sm:text-2xl font-black">
+                  <h2 className="text-base sm:text-2xl font-black">
                     Balance por persona
                   </h2>
 
-                  <div className="flex gap-2">
+                  <div className="flex gap-1.5">
                     <div className="px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-300 text-xs font-bold">
                       Yo
                     </div>
@@ -1423,7 +1602,7 @@ export default function FinanzasHeidy() {
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm text-white/60">Yo</span>
                       <span className="text-cyan-300 font-black">
-                        RD${money(myAvailable)}
+                        RD${money(summaryFilter === 'Pareja' ? partnerAvailable : myAvailable)}
                       </span>
                     </div>
 
@@ -1467,19 +1646,19 @@ export default function FinanzasHeidy() {
                 </div>
               </div>
 
-              <div className="rounded-[32px] bg-white/5 border border-white/10 p-6">
-                <h2 className="text-lg sm:text-2xl font-black mb-6">
+              <div className="rounded-[24px] bg-white/5 border border-white/10 p-4 sm:p-6">
+                <h2 className="text-base sm:text-2xl font-black mb-6">
                   Últimos movimientos
                 </h2>
 
-                <div className="space-y-3 max-h-[420px] overflow-auto pr-2">
-                  {filteredExpenses.length === 0 && (
+                <div className="space-y-2 max-h-[420px] overflow-auto pr-1 sm:pr-2">
+                  {summaryFilteredExpenses.length === 0 && (
                     <div className="rounded-[22px] bg-white/[0.03] border border-white/10 h-[180px] flex items-center justify-center text-white/40">
                       Sin movimientos todavía
                     </div>
                   )}
 
-                  {[...filteredExpenses]
+                  {[...summaryFilteredExpenses]
                     .filter((expense) => expense.paid)
                     .reverse()
                     .map((expense) => (
@@ -1488,7 +1667,7 @@ export default function FinanzasHeidy() {
                         className="rounded-[22px] bg-gradient-to-r from-white/[0.04] to-white/[0.02] border border-white/10 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 overflow-hidden"
                       >
                         <div className="flex items-center gap-4 min-w-0">
-                          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-cyan-500/10 flex items-center justify-center text-2xl shrink-0">
+                          <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-cyan-500/10 flex items-center justify-center text-2xl shrink-0">
                             {(expense.category || '💸').split(' ')[0]}
                           </div>
 
@@ -1514,7 +1693,7 @@ export default function FinanzasHeidy() {
                         </div>
 
                         <div className="text-left sm:text-right w-full sm:w-auto break-words">
-                          <h2 className={`text-lg sm:text-2xl font-black break-all leading-tight ${expense.paid ? 'text-emerald-300' : 'text-red-300'}`}>
+                          <h2 className={`text-base sm:text-2xl font-black break-all leading-tight ${expense.paid ? 'text-emerald-300' : 'text-red-300'}`}>
                             {expense.paid ? '-' : ''}RD${money(expense.amount)}
                           </h2>
 
@@ -1536,7 +1715,7 @@ export default function FinanzasHeidy() {
           <>
             <div className="mt-6 rounded-[32px] bg-gradient-to-br from-[#10182d] to-[#0b1120] border border-white/10 p-6">
               <div className="flex items-center justify-between gap-3 mb-6">
-                <h2 className="text-2xl sm:text-3xl font-black tracking-tight">
+                <h2 className="text-xl sm:text-3xl font-black tracking-tight">
                   Cuentas y tarjetas
                 </h2>
 
@@ -1567,22 +1746,22 @@ export default function FinanzasHeidy() {
                 </button>
               </div>
 
-              <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
-                {accounts.map((account) => (
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2 sm:gap-4">
+                {summaryFilteredAccounts.map((account) => (
                   <div
                     key={account.id}
-                    className="rounded-[24px] overflow-hidden bg-gradient-to-br from-[#0f172d] to-[#0b1020] border border-white/10"
+                    className="rounded-[20px] overflow-hidden bg-gradient-to-br from-[#0f172d] to-[#0b1020] border border-white/10"
                   >
-                    <div className={`p-4 bg-gradient-to-r ${account.color || 'from-violet-500 to-purple-500'}`}>
+                    <div className={`p-3 sm:p-4 bg-gradient-to-r ${account.color || 'from-violet-500 to-purple-500'}`}>
                       <div className="flex items-start justify-between">
                         <div>
                           <p className="text-white/70 text-sm">{account.bank}</p>
-                          <h3 className="text-lg sm:text-2xl font-black mt-1 text-white">
+                          <h3 className="text-base sm:text-2xl font-black mt-1 text-white">
                             {account.type}
                           </h3>
                         </div>
 
-                        <div className="flex gap-2">
+                        <div className="flex gap-1.5">
                           <button
                             onClick={() => {
                               setEditingAccountId(account.id)
@@ -1608,7 +1787,7 @@ export default function FinanzasHeidy() {
                               setAccountLinkedGoal(account.linkedGoal || '')
                               setShowAccountModal(true)
                             }}
-                            className="w-9 h-9 rounded-[14px] bg-black/20 text-sm"
+                            className="w-8 h-8 sm:w-9 sm:h-9 rounded-[12px] sm:rounded-[14px] bg-black/20 text-sm"
                           >
                             ✏️
                           </button>
@@ -1641,7 +1820,7 @@ export default function FinanzasHeidy() {
                                 prev.filter((item) => item.id !== account.id)
                               )
                             }}
-                            className="w-9 h-9 rounded-[14px] bg-red-500/20 text-sm"
+                            className="w-8 h-8 sm:w-9 sm:h-9 rounded-[12px] sm:rounded-[14px] bg-red-500/20 text-sm"
                           >
                             🗑️
                           </button>
@@ -1649,7 +1828,7 @@ export default function FinanzasHeidy() {
                       </div>
                     </div>
 
-                    <div className="p-4 space-y-3">
+                    <div className="p-3 space-y-2.5">
                       <div>
                         <p className="text-white/40 text-xs uppercase">
                           {account.type === 'Ahorro'
@@ -1658,7 +1837,7 @@ export default function FinanzasHeidy() {
                             ? 'Disponible crédito'
                             : 'Disponible'}
                         </p>
-                        <h2 className="text-3xl font-black text-cyan-300 mt-1">
+                        <h2 className="text-2xl sm:text-3xl font-black text-cyan-300 mt-1">
                           RD${money(
                             account.type === 'Nómina'
                               ? (
@@ -1672,8 +1851,8 @@ export default function FinanzasHeidy() {
                                     (new Date().getDate() >= Number(account.autoDebitDay || 0)
                                       ? Number(account.autoDebitAmount || 0)
                                       : 0) -
-                                    filteredExpenses
-                                      .filter(
+                                    summaryFilteredExpenses
+      .filter(
                                         (expense) =>
                                           expense.paid &&
                                           (
@@ -1690,8 +1869,8 @@ export default function FinanzasHeidy() {
                                 )
                               : account.type === 'Tarjeta'
                               ? (() => {
-                                  const cardDebt = filteredExpenses
-                                    .filter(
+                                  const cardDebt = summaryFilteredExpenses
+      .filter(
                                       (expense) =>
                                         expense.linkedCardId === account.id &&
                                         !expense.paid
@@ -1709,13 +1888,13 @@ export default function FinanzasHeidy() {
                         </h2>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div className="rounded-[16px] bg-white/[0.04] p-3 min-h-[82px] flex flex-col justify-between">
+                      <div className="grid grid-cols-2 gap-2">
+                            <div className="rounded-[14px] bg-white/[0.04] p-2.5 min-h-[68px] flex flex-col justify-between">
                           <p className="text-white/40 text-xs uppercase">Titular</p>
                           <h4 className="text-sm font-black mt-1">{account.owner}</h4>
                         </div>
 
-                        <div className="rounded-[16px] bg-white/[0.04] p-3 min-h-[82px] flex flex-col justify-between">
+                        <div className="rounded-[14px] bg-white/[0.04] p-2.5 min-h-[68px] flex flex-col justify-between">
                           <p className="text-white/40 text-xs uppercase">Ingreso total</p>
                           <h4 className="text-sm font-black mt-1">
                             RD${money(
@@ -1748,15 +1927,15 @@ export default function FinanzasHeidy() {
 
                       {account.type === 'Nómina' && (
                         <>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div className="rounded-[16px] bg-white/[0.04] p-3 min-h-[82px] flex flex-col justify-between">
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="rounded-[14px] bg-white/[0.04] p-2.5 min-h-[68px] flex flex-col justify-between">
                               <p className="text-white/40 text-xs uppercase">1ra Quincena</p>
                               <h4 className="text-sm font-black mt-1">
                                 RD${money(account.payrollOne)}
                               </h4>
                             </div>
 
-                            <div className="rounded-[16px] bg-white/[0.04] p-3 min-h-[82px] flex flex-col justify-between">
+                            <div className="rounded-[14px] bg-white/[0.04] p-2.5 min-h-[68px] flex flex-col justify-between">
                               <p className="text-white/40 text-xs uppercase">2da Quincena</p>
                               <h4 className="text-sm font-black mt-1">
                                 RD${money(account.payrollTwo)}
@@ -1764,15 +1943,15 @@ export default function FinanzasHeidy() {
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div className="rounded-[16px] bg-white/[0.04] p-3 min-h-[82px] flex flex-col justify-between">
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="rounded-[14px] bg-white/[0.04] p-2.5 min-h-[68px] flex flex-col justify-between">
                               <p className="text-white/40 text-xs uppercase">1er Pago</p>
                               <h4 className="text-sm font-black mt-1">
                                 Día {account.firstPayDay || '-'}
                               </h4>
                             </div>
 
-                            <div className="rounded-[16px] bg-white/[0.04] p-3 min-h-[82px] flex flex-col justify-between">
+                            <div className="rounded-[14px] bg-white/[0.04] p-2.5 min-h-[68px] flex flex-col justify-between">
                               <p className="text-white/40 text-xs uppercase">2do Pago</p>
                               <h4 className="text-sm font-black mt-1">
                                 Día {account.secondPayDay || '-'}
@@ -1803,8 +1982,8 @@ export default function FinanzasHeidy() {
                       )}
 
                       {account.type === 'Tarjeta' && (() => {
-                        const cardDebt = filteredExpenses
-                          .filter(
+                        const cardDebt = summaryFilteredExpenses
+      .filter(
                             (expense) =>
                               expense.linkedCardId === account.id &&
                               !expense.paid
@@ -1820,15 +1999,15 @@ export default function FinanzasHeidy() {
 
                         return (
                           <>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                              <div className="rounded-[16px] bg-red-500/10 p-3 min-h-[82px] flex flex-col justify-between">
+                            <div className="grid grid-cols-2 gap-2">
+                              <div className="rounded-[14px] bg-red-500/10 p-2.5 min-h-[68px] flex flex-col justify-between">
                                 <p className="text-red-300 text-xs uppercase">Deuda</p>
                                 <h4 className="text-sm font-black mt-1">
                                   RD${money(cardDebt)}
                                 </h4>
                               </div>
 
-                              <div className="rounded-[16px] bg-cyan-500/10 p-3 min-h-[82px] flex flex-col justify-between">
+                              <div className="rounded-[14px] bg-cyan-500/10 p-2.5 min-h-[68px] flex flex-col justify-between">
                                 <p className="text-cyan-300 text-xs uppercase">Disponible crédito</p>
                                 <h4 className="text-sm font-black mt-1">
                                   RD${money(availableCredit)}
@@ -1836,7 +2015,7 @@ export default function FinanzasHeidy() {
                               </div>
                             </div>
 
-                            <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden mt-1 mb-3">
+                            <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden mt-1 mb-2">
                               <div
                                 className="h-3 rounded-full bg-gradient-to-r from-orange-400 to-red-500"
                                 style={{
@@ -1850,7 +2029,7 @@ export default function FinanzasHeidy() {
                               />
                             </div>
 
-                            <div className="flex items-center justify-between text-xs text-white/50 mb-3">
+                            <div className="flex items-center justify-between text-[10px] text-white/50 mb-2">
                               <span>Utilización</span>
 
                               <span>
@@ -1862,15 +2041,15 @@ export default function FinanzasHeidy() {
                               </span>
                             </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                              <div className="rounded-[16px] bg-white/[0.04] p-3 min-h-[82px] flex flex-col justify-between">
+                            <div className="grid grid-cols-2 gap-2">
+                              <div className="rounded-[14px] bg-white/[0.04] p-2.5 min-h-[68px] flex flex-col justify-between">
                                 <p className="text-white/40 text-xs uppercase">Corte</p>
                                 <h4 className="text-sm font-black mt-1">
                                   Día {account.cutDay || '-'}
                                 </h4>
                               </div>
 
-                              <div className="rounded-[16px] bg-white/[0.04] p-3 min-h-[82px] flex flex-col justify-between">
+                              <div className="rounded-[14px] bg-white/[0.04] p-2.5 min-h-[68px] flex flex-col justify-between">
                                 <p className="text-white/40 text-xs uppercase">Pago</p>
                                 <h4 className="text-sm font-black mt-1">
                                   Día {account.paymentDay || '-'}
@@ -1890,13 +2069,13 @@ export default function FinanzasHeidy() {
               <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-6 overflow-y-auto no-scrollbar">
                 <div className="w-full max-w-2xl rounded-[24px] sm:rounded-[32px] bg-[#0B1120] border border-white/10 p-4 sm:p-6 max-h-[92vh] overflow-y-auto no-scrollbar">
                   <div className="flex items-start sm:items-center justify-between gap-3 mb-5">
-                    <h2 className="text-2xl sm:text-4xl font-black">
+                    <h2 className="text-xl sm:text-4xl font-black">
                       {editingAccountId ? 'Editar cuenta' : 'Nueva cuenta'}
                     </h2>
 
                     <button
                       onClick={() => setShowAccountModal(false)}
-                      className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-white/5 shrink-0"
+                      className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-white/5 shrink-0"
                     >
                       ✕
                     </button>
@@ -2129,7 +2308,7 @@ export default function FinanzasHeidy() {
             <div className="mt-6 rounded-[32px] bg-gradient-to-br from-[#10182d] to-[#0b1120] border border-white/10 p-6">
               <div className="flex items-center justify-between gap-3 mb-6">
                 <div className="min-w-0">
-                  <h2 className="text-2xl sm:text-3xl font-black tracking-tight">
+                  <h2 className="text-xl sm:text-3xl font-black tracking-tight">
                     Gastos y pagos
                   </h2>
 
@@ -2169,7 +2348,7 @@ export default function FinanzasHeidy() {
                 ))}
               </div>
 
-              <div className="space-y-5">
+              <div className="space-y-3 sm:space-y-5">
                 {filteredExpenses.length === 0 && (
                   <div className="rounded-[24px] bg-white/[0.03] border border-white/10 h-[180px] flex items-center justify-center text-white/50 text-lg">
                     Sin gastos este mes
@@ -2191,12 +2370,11 @@ export default function FinanzasHeidy() {
                 ).map(([category, categoryExpenses]: any) => (
                   <details
                     key={category}
-                    open
-                    className="rounded-[24px] bg-white/[0.03] border border-white/10 overflow-hidden"
+                    className="rounded-[20px] sm:rounded-[24px] bg-white/[0.03] border border-white/10 overflow-hidden"
                   >
-                    <summary className="cursor-pointer list-none px-5 py-4 flex items-center justify-between gap-4">
+                    <summary className="cursor-pointer list-none px-3 sm:px-5 py-3 sm:py-4 flex items-center justify-between gap-3">
                       <div>
-                        <h3 className="font-black text-lg sm:text-2xl">
+                        <h3 className="font-black text-base sm:text-2xl">
                           {category}
                         </h3>
 
@@ -2205,7 +2383,7 @@ export default function FinanzasHeidy() {
                         </p>
                       </div>
 
-                      <h3 className="text-cyan-300 font-black text-lg sm:text-2xl">
+                      <h3 className="text-cyan-300 font-black text-base sm:text-2xl">
                         RD${money(
                           categoryExpenses.reduce(
                             (acc: number, item: any) =>
@@ -2216,15 +2394,15 @@ export default function FinanzasHeidy() {
                       </h3>
                     </summary>
 
-                    <div className="space-y-3 p-4">
+                    <div className="space-y-2 p-2.5 sm:p-4">
                       {categoryExpenses.map((expense: any) => (
                         <div
                           key={expense.id}
-                          className="rounded-[24px] bg-gradient-to-br from-[#0f172d] to-[#0b1020] border border-white/10 p-4"
+                          className="rounded-[18px] sm:rounded-[20px] bg-gradient-to-br from-[#0f172d] to-[#0b1020] border border-white/10 p-2.5 sm:p-4"
                         >
                           <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
                             <div className="flex items-start gap-4">
-                              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-cyan-500/10 flex items-center justify-center text-2xl shrink-0">
+                              <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-cyan-500/10 flex items-center justify-center text-2xl shrink-0">
                                 {(expense.category || '💸').split(' ')[0]}
                               </div>
 
@@ -2244,7 +2422,7 @@ export default function FinanzasHeidy() {
                                   </span>
                                 </div>
 
-                                <h3 className="text-base sm:text-xl font-black">
+                                <h3 className="text-sm sm:text-xl font-black">
                                   {expense.name}
                                 </h3>
 
@@ -2262,12 +2440,12 @@ export default function FinanzasHeidy() {
                               </div>
                             </div>
 
-                            <div className="flex flex-col items-end gap-3">
-                              <h2 className={`text-lg sm:text-2xl font-black ${expense.paid ? 'text-emerald-300' : 'text-red-300'}`}>
+                            <div className="flex flex-col items-end gap-2">
+                              <h2 className={`text-base sm:text-2xl font-black ${expense.paid ? 'text-emerald-300' : 'text-red-300'}`}>
                                 RD${money(expense.amount)}
                               </h2>
 
-                              <div className="flex gap-2">
+                              <div className="flex gap-1.5">
                                 <button
                                   onClick={() => {
                                     const nextPaid = !expense.paid
@@ -2301,7 +2479,7 @@ export default function FinanzasHeidy() {
                                     setExpensePaid(expense.paid)
                                     setShowExpenseModal(true)
                                   }}
-                                  className="w-9 h-9 rounded-[14px] bg-cyan-500/10 text-sm"
+                                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-[12px] sm:rounded-[14px] bg-cyan-500/10 text-sm"
                                 >
                                   ✏️
                                 </button>
@@ -2312,7 +2490,7 @@ export default function FinanzasHeidy() {
                                       prev.filter((item) => item.id !== expense.id)
                                     )
                                   }
-                                  className="w-9 h-9 rounded-[14px] bg-red-500/10 text-sm"
+                                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-[12px] sm:rounded-[14px] bg-red-500/10 text-sm"
                                 >
                                   🗑️
                                 </button>
@@ -2331,13 +2509,13 @@ export default function FinanzasHeidy() {
               <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-6 overflow-y-auto no-scrollbar">
                 <div className="w-full max-w-2xl rounded-[24px] sm:rounded-[32px] bg-[#0B1120] border border-white/10 p-4 sm:p-6 max-h-[92vh] overflow-y-auto no-scrollbar">
                   <div className="flex items-start sm:items-center justify-between gap-3 mb-5">
-                    <h2 className="text-2xl sm:text-4xl font-black">
+                    <h2 className="text-xl sm:text-4xl font-black">
                       Agregar gasto / pago
                     </h2>
 
                     <button
                       onClick={() => setShowExpenseModal(false)}
-                      className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-white/5 shrink-0"
+                      className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-white/5 shrink-0"
                     >
                       ✕
                     </button>
@@ -2494,7 +2672,7 @@ export default function FinanzasHeidy() {
           <>
             <div className="mt-6 rounded-[32px] bg-gradient-to-br from-[#10182d] to-[#0b1120] border border-white/10 p-6">
               <div className="flex items-center justify-between gap-3 mb-6">
-                <h2 className="text-2xl sm:text-3xl font-black tracking-tight">
+                <h2 className="text-xl sm:text-3xl font-black tracking-tight">
                   Metas de ahorro
                 </h2>
 
@@ -2521,7 +2699,7 @@ export default function FinanzasHeidy() {
                 </div>
               </div>
 
-              <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
                 {goals.map((goal) => {
                   const progress = goal.target
                     ? Math.min((goal.saved / goal.target) * 100, 100)
@@ -2582,7 +2760,7 @@ export default function FinanzasHeidy() {
                                 setGoalLocation(goal.location || 'Efectivo')
                                 setShowGoalModal(true)
                               }}
-                              className="w-9 h-9 rounded-[14px] bg-cyan-500/10 text-sm"
+                              className="w-8 h-8 sm:w-9 sm:h-9 rounded-[12px] sm:rounded-[14px] bg-cyan-500/10 text-sm"
                             >
                               ✏️
                             </button>
@@ -2593,7 +2771,7 @@ export default function FinanzasHeidy() {
                                   prev.filter((item) => item.id !== goal.id)
                                 )
                               }
-                              className="w-9 h-9 rounded-[14px] bg-red-500/10 text-sm"
+                              className="w-8 h-8 sm:w-9 sm:h-9 rounded-[12px] sm:rounded-[14px] bg-red-500/10 text-sm"
                             >
                               🗑️
                             </button>
@@ -2608,42 +2786,42 @@ export default function FinanzasHeidy() {
                         />
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-5">
-                        <div className="rounded-[16px] bg-white/[0.04] p-3 min-h-[82px] flex flex-col justify-between">
+                      <div className="grid grid-cols-2 gap-2 mt-4">
+                        <div className="rounded-[14px] bg-white/[0.04] p-2.5 min-h-[68px] flex flex-col justify-between">
                           <p className="text-white/40 text-xs uppercase tracking-wider">
                             Ahorrado
                           </p>
 
-                          <h4 className="text-base font-black text-emerald-300 mt-1">
+                          <h4 className="text-sm sm:text-base font-black text-emerald-300 mt-1">
                             RD${money(
                               goal.saved
                             )}
                           </h4>
                         </div>
 
-                        <div className="rounded-[16px] bg-white/[0.04] p-3 min-h-[82px] flex flex-col justify-between">
+                        <div className="rounded-[14px] bg-white/[0.04] p-2.5 min-h-[68px] flex flex-col justify-between">
                           <p className="text-white/40 text-xs uppercase tracking-wider">
                             Restante
                           </p>
 
-                          <h4 className="text-base font-black text-yellow-300 mt-1">
+                          <h4 className="text-sm sm:text-base font-black text-yellow-300 mt-1">
                             RD${money(remaining)}
                           </h4>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
-                        <div className="rounded-[16px] bg-cyan-500/10 p-3 min-h-[82px] flex flex-col justify-between">
+                      <div className="grid grid-cols-2 gap-2 mt-3">
+                        <div className="rounded-[14px] bg-cyan-500/10 p-2.5 min-h-[68px] flex flex-col justify-between">
                           <p className="text-cyan-300 text-xs uppercase tracking-wider">
                             Meta mensual
                           </p>
 
-                          <h4 className="text-sm font-black text-cyan-100 mt-2 leading-snug">
+                          <h4 className="text-xs sm:text-sm font-black text-cyan-100 mt-1 leading-snug">
                             RD${money(goal.monthly)}
                           </h4>
                         </div>
 
-                        <div className="rounded-[16px] bg-white/[0.04] p-3 min-h-[82px] flex flex-col justify-between">
+                        <div className="rounded-[14px] bg-white/[0.04] p-2.5 min-h-[68px] flex flex-col justify-between">
                           <p className="text-white/40 text-xs uppercase tracking-wider">
                             Fecha objetivo
                           </p>
@@ -2653,22 +2831,22 @@ export default function FinanzasHeidy() {
                           </h4>
                         </div>
 
-                        <div className="rounded-[16px] bg-violet-500/10 p-3 min-h-[82px] flex flex-col justify-between">
+                        <div className="rounded-[14px] bg-violet-500/10 p-2.5 min-h-[68px] flex flex-col justify-between">
                           <p className="text-violet-300 text-xs uppercase tracking-wider">
                             Ubicación
                           </p>
 
-                          <h4 className="text-sm font-black text-violet-100 mt-2 leading-snug break-words">
+                          <h4 className="text-xs sm:text-sm font-black text-violet-100 mt-1 leading-snug break-words">
                             {goal.location || 'Efectivo'}
                           </h4>
                         </div>
 
-                        <div className="rounded-[16px] bg-emerald-500/10 p-3 min-h-[82px] flex flex-col justify-between">
+                        <div className="rounded-[14px] bg-emerald-500/10 p-2.5 min-h-[68px] flex flex-col justify-between">
                           <p className="text-emerald-300 text-xs uppercase tracking-wider">
                             Ahorro sugerido
                           </p>
 
-                          <h4 className="text-sm font-black text-emerald-100 mt-2 leading-snug">
+                          <h4 className="text-xs sm:text-sm font-black text-emerald-100 mt-1 leading-snug">
                             RD${money(suggested)}
                           </h4>
                         </div>
@@ -2683,13 +2861,13 @@ export default function FinanzasHeidy() {
               <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-6 overflow-y-auto no-scrollbar">
                 <div className="w-full max-w-2xl rounded-[24px] sm:rounded-[32px] bg-[#0B1120] border border-white/10 p-4 sm:p-6 max-h-[92vh] overflow-y-auto no-scrollbar">
                   <div className="flex items-start sm:items-center justify-between gap-3 mb-5">
-                    <h2 className="text-2xl sm:text-4xl font-black">
+                    <h2 className="text-xl sm:text-4xl font-black">
                       {editingGoalId ? 'Editar meta' : 'Nueva meta'}
                     </h2>
 
                     <button
                       onClick={() => setShowGoalModal(false)}
-                      className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-white/5 shrink-0"
+                      className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-white/5 shrink-0"
                     >
                       ✕
                     </button>
