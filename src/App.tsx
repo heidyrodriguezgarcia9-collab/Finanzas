@@ -36,6 +36,8 @@ interface Goal {
 }
 
 interface Expense {
+  linkedCardId?: number
+  paymentAccount?: string
   id: number
   cardId?: number
   name: string
@@ -392,7 +394,10 @@ export default function FinanzasHeidy() {
             .filter(
               (expense) =>
                 expense.paid &&
-                expense.account === `${item.bank} - ${item.type}`
+                (
+                  expense.account === `${item.bank} - ${item.type}` ||
+                  expense.paymentAccount === `${item.bank} - ${item.type}`
+                )
             )
             .reduce(
               (expenseAcc, expense) =>
@@ -704,10 +709,8 @@ export default function FinanzasHeidy() {
 
     if (accountType === 'Tarjeta') {
       if (!accountLimit) errors.limit = true
-      if (!accountAvailableCredit) errors.availableCredit = true
       if (!accountCutDay) errors.cutDay = true
       if (!accountPaymentDay) errors.paymentDay = true
-      if (!accountDebtAccount) errors.debtAccount = true
     }
 
     setAccountErrors(errors)
@@ -740,9 +743,9 @@ export default function FinanzasHeidy() {
       payrollOne: accountPayrollOne,
       payrollTwo: accountPayrollTwo,
       limit: Number(String(accountLimit || 0)),
-      availableCredit: Number(String(accountAvailableCredit || 0)),
-      debt: Number(String(accountDebt || 0)),
-      debtAccount: accountDebtAccount,
+      availableCredit: Number(String(accountLimit || 0)),
+      debt: 0,
+      debtAccount: '',
       firstPayDay: accountFirstPayDay,
       secondPayDay: accountSecondPayDay,
       autoDebitName: accountAutoDebitName,
@@ -784,25 +787,6 @@ export default function FinanzasHeidy() {
           ...prev,
         ])
       }
-
-      if (accountType === 'Tarjeta' && Number(String(accountDebt || 0)) > 0) {
-        setExpenses((prev) => [
-          {
-            id: Date.now() + 1,
-            name: `Pago ${accountBank}`,
-            amount: Number(String(accountDebt || 0)),
-            frequency: 'Fijo',
-            originalMonth: selectedMonth,
-            owner: accountOwner,
-            date: accountPaymentDay || '',
-            category: '💳 Préstamo',
-            paid: false,
-            account: accountDebtAccount,
-            cardId: data.id,
-          },
-          ...prev,
-        ])
-      }
     }
 
     setAccountBank('')
@@ -838,11 +822,22 @@ export default function FinanzasHeidy() {
     if (!expenseDate) errors.date = true
     if (!expenseAccount) errors.account = true
 
+    const selectedAccount = accounts.find(
+      (acc) => `${acc.bank} - ${acc.type}` === expenseAccount
+    )
+
+    if (selectedAccount?.type === 'Tarjeta' && !accountDebtAccount) {
+      errors.paymentAccount = true
+    }
+
     setExpenseErrors(errors)
 
     if (Object.keys(errors).length > 0) return
-    const data = {
+    const isCardExpense = selectedAccount?.type === 'Tarjeta'
+
+    const data: any = {
       id: editingExpenseId || Date.now(),
+      linkedCardId: isCardExpense ? selectedAccount.id : null,
       name: expenseName,
       amount: Number(String(expenseAmount || 0)),
       frequency: expenseFrequency,
@@ -854,7 +849,10 @@ export default function FinanzasHeidy() {
       date: expenseDate,
       category: expenseCategory,
       paid: expensePaid,
-      account: expenseAccount,
+      account: expenseAccount || null,
+      paymentAccount: isCardExpense
+        ? accountDebtAccount || null
+        : expenseAccount || null,
     }
 
     if (editingExpenseId) {
@@ -866,26 +864,16 @@ export default function FinanzasHeidy() {
     } else {
       setExpenses((prev) => [...prev, data])
 
-      if (expensePaid && expenseAccount) {
+      if (!isCardExpense && expensePaid && expenseAccount) {
         setAccounts((prev) =>
           prev.map((account) => {
             const accountName = `${account.bank} - ${account.type}`
 
             if (accountName === expenseAccount) {
-              if (account.type === 'Tarjeta') {
-                return {
-                  ...account,
-                  availableCredit:
-                    Number(String(account.availableCredit || 0)) - Number(String(expenseAmount || 0)),
-                  debt:
-                    Number(String(account.debt || 0)) + Number(String(expenseAmount || 0)),
-                }
-              }
-
               return {
                 ...account,
                 balance:
-                  Number(String(account.balance || 0)) - Number(String(expenseAmount || 0)),
+                  Number(account.balance || 0) - Number(expenseAmount || 0),
               }
             }
 
@@ -1688,7 +1676,10 @@ export default function FinanzasHeidy() {
                                       .filter(
                                         (expense) =>
                                           expense.paid &&
-                                          expense.account === `${account.bank} - ${account.type}`
+                                          (
+                                            expense.account === `${account.bank} - ${account.type}` ||
+                                            expense.paymentAccount === `${account.bank} - ${account.type}`
+                                          )
                                       )
                                       .reduce(
                                         (acc, expense) =>
@@ -1698,7 +1689,21 @@ export default function FinanzasHeidy() {
                                   )
                                 )
                               : account.type === 'Tarjeta'
-                              ? account.availableCredit || 0
+                              ? (() => {
+                                  const cardDebt = filteredExpenses
+                                    .filter(
+                                      (expense) =>
+                                        expense.linkedCardId === account.id &&
+                                        !expense.paid
+                                    )
+                                    .reduce(
+                                      (acc, expense) =>
+                                        acc + Number(expense.amount || 0),
+                                      0
+                                    )
+
+                                  return Number(account.limit || 0) - cardDebt
+                                })()
                               : account.balance || 0
                           )}
                         </h2>
@@ -1797,65 +1802,84 @@ export default function FinanzasHeidy() {
                         </>
                       )}
 
-                      {account.type === 'Tarjeta' && (
-                        <>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div className="rounded-[16px] bg-red-500/10 p-3 min-h-[82px] flex flex-col justify-between">
-                              <p className="text-red-300 text-xs uppercase">Deuda</p>
-                              <h4 className="text-sm font-black mt-1">
-                                RD${money(account.debt || 0)}
-                              </h4>
+                      {account.type === 'Tarjeta' && (() => {
+                        const cardDebt = filteredExpenses
+                          .filter(
+                            (expense) =>
+                              expense.linkedCardId === account.id &&
+                              !expense.paid
+                          )
+                          .reduce(
+                            (acc, expense) =>
+                              acc + Number(expense.amount || 0),
+                            0
+                          )
+
+                        const availableCredit =
+                          Number(account.limit || 0) - cardDebt
+
+                        return (
+                          <>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <div className="rounded-[16px] bg-red-500/10 p-3 min-h-[82px] flex flex-col justify-between">
+                                <p className="text-red-300 text-xs uppercase">Deuda</p>
+                                <h4 className="text-sm font-black mt-1">
+                                  RD${money(cardDebt)}
+                                </h4>
+                              </div>
+
+                              <div className="rounded-[16px] bg-cyan-500/10 p-3 min-h-[82px] flex flex-col justify-between">
+                                <p className="text-cyan-300 text-xs uppercase">Disponible crédito</p>
+                                <h4 className="text-sm font-black mt-1">
+                                  RD${money(availableCredit)}
+                                </h4>
+                              </div>
                             </div>
 
-                            <div className="rounded-[16px] bg-cyan-500/10 p-3 min-h-[82px] flex flex-col justify-between">
-                              <p className="text-cyan-300 text-xs uppercase">Disponible crédito</p>
-                              <h4 className="text-sm font-black mt-1">
-                                RD${money(account.availableCredit || 0)}
-                              </h4>
+                            <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden mt-1 mb-3">
+                              <div
+                                className="h-3 rounded-full bg-gradient-to-r from-orange-400 to-red-500"
+                                style={{
+                                  width: `${Math.min(
+                                    100,
+                                    (cardDebt /
+                                      Math.max(Number(String(account.limit ?? 1)), 1)) *
+                                      100
+                                  )}%`,
+                                }}
+                              />
                             </div>
-                          </div>
 
-                          <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden mt-1 mb-3">
-                            <div
-                              className="h-3 rounded-full bg-gradient-to-r from-orange-400 to-red-500"
-                              style={{
-                                width: `${Math.min(
-                                  100,
-                                  ((account.debt || 0) /
-                                    Math.max(Number(String(String(account.limit ?? 1))), 1)) *
+                            <div className="flex items-center justify-between text-xs text-white/50 mb-3">
+                              <span>Utilización</span>
+
+                              <span>
+                                {Math.round(
+                                  (cardDebt /
+                                    Math.max(Number(String(account.limit ?? 1)), 1)) *
                                     100
-                                )}%`,
-                              }}
-                            />
-                          </div>
-
-                          <div className="flex items-center justify-between text-xs text-white/50 mb-3">
-                            <span>
-                              Utilización
-                            </span>
-
-                            <span>
-                              {Math.round(
-                                ((account.debt || 0) /
-                                  Math.max(Number(String(String(account.limit ?? 1))), 1)) *
-                                  100
-                              )}%
-                            </span>
-                          </div>
-
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div className="rounded-[16px] bg-white/[0.04] p-3 min-h-[82px] flex flex-col justify-between">
-                              <p className="text-white/40 text-xs uppercase">Corte</p>
-                              <h4 className="text-sm font-black mt-1">Día {account.cutDay || '-'}</h4>
+                                )}%
+                              </span>
                             </div>
 
-                            <div className="rounded-[16px] bg-white/[0.04] p-3 min-h-[82px] flex flex-col justify-between">
-                              <p className="text-white/40 text-xs uppercase">Pago</p>
-                              <h4 className="text-sm font-black mt-1">Día {account.paymentDay || '-'}</h4>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <div className="rounded-[16px] bg-white/[0.04] p-3 min-h-[82px] flex flex-col justify-between">
+                                <p className="text-white/40 text-xs uppercase">Corte</p>
+                                <h4 className="text-sm font-black mt-1">
+                                  Día {account.cutDay || '-'}
+                                </h4>
+                              </div>
+
+                              <div className="rounded-[16px] bg-white/[0.04] p-3 min-h-[82px] flex flex-col justify-between">
+                                <p className="text-white/40 text-xs uppercase">Pago</p>
+                                <h4 className="text-sm font-black mt-1">
+                                  Día {account.paymentDay || '-'}
+                                </h4>
+                              </div>
                             </div>
-                          </div>
-                        </>
-                      )}
+                          </>
+                        )
+                      })()}
                     </div>
                   </div>
                 ))}
@@ -2050,42 +2074,12 @@ export default function FinanzasHeidy() {
                             className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base"
                           />
 
-                          <input
-                            value={accountAvailableCredit}
-                            onChange={(e) => setAccountAvailableCredit(e.target.value)}
-                            placeholder="Crédito disponible *"
-                            className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base"
-                          />
+                          
                         </div>
 
-                        <input
-                          value={accountDebt}
-                          onChange={(e) => setAccountDebt(e.target.value)}
-                          placeholder="Deuda actual"
-                          className="w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border border-white/10 px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base"
-                        />
+                        
 
-                        <select
-                          value={accountDebtAccount}
-                          onChange={(e) => setAccountDebtAccount(e.target.value)}
-                          className={`w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base text-white ${accountErrors.debtAccount ? 'border-red-500 bg-red-500/10' : 'border-white/10'}`}
-                        >
-                          <option value="" className="bg-[#0B1120]">
-                            ¿Desde qué cuenta pagarás?
-                          </option>
-
-                          {accounts
-                            .filter((acc) => acc.type !== 'Tarjeta')
-                            .map((acc) => (
-                              <option
-                                key={acc.id}
-                                value={`${acc.bank} - ${acc.type}`}
-                                className="bg-[#0B1120]"
-                              >
-                                {acc.bank} - {acc.type}
-                              </option>
-                            ))}
-                        </select>
+                        
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div className="space-y-2">
@@ -2281,7 +2275,10 @@ export default function FinanzasHeidy() {
                                     setExpenses((prev) =>
                                       prev.map((item) =>
                                         item.id === expense.id
-                                          ? { ...item, paid: nextPaid }
+                                          ? {
+                                              ...item,
+                                              paid: nextPaid,
+                                            }
                                           : item
                                       )
                                     )
@@ -2439,6 +2436,36 @@ export default function FinanzasHeidy() {
                         ))}
                     </select>
 
+                    {accounts.find(
+                      (acc) => `${acc.bank} - ${acc.type}` === expenseAccount
+                    )?.type === 'Tarjeta' && (
+                      <select
+                        value={accountDebtAccount}
+                        onChange={(e) => setAccountDebtAccount(e.target.value)}
+                        className={`w-full rounded-[18px] sm:rounded-[20px] bg-white/[0.04] border px-4 sm:px-5 py-3 sm:py-4 text-sm sm:text-base text-white ${expenseErrors.paymentAccount ? 'border-red-500 bg-red-500/10' : 'border-white/10'}`}
+                      >
+                        <option value="" className="bg-[#0B1120]">
+                          ¿Desde qué cuenta pagarás esta tarjeta? *
+                        </option>
+
+                        {accounts
+                          .filter(
+                            (acc) =>
+                              acc.type !== 'Tarjeta' &&
+                              acc.owner === expenseOwner
+                          )
+                          .map((acc) => (
+                            <option
+                              key={acc.id}
+                              value={`${acc.bank} - ${acc.type}`}
+                              className="bg-[#0B1120]"
+                            >
+                              {acc.bank} - {acc.type}
+                            </option>
+                          ))}
+                      </select>
+                    )}
+
                     <label className="flex items-center gap-3 text-sm text-white/70">
                       <input
                         type="checkbox"
@@ -2449,7 +2476,9 @@ export default function FinanzasHeidy() {
                     </label>
 
                     <button
-                      onClick={addExpense}
+                      onClick={() => {
+                        addExpense()
+                      }}
                       className="w-full rounded-[18px] sm:rounded-[20px] bg-gradient-to-r from-cyan-400 to-blue-500 py-3 sm:py-4 text-black font-black text-sm sm:text-lg"
                     >
                       Guardar gasto
